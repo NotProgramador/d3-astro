@@ -1,0 +1,44 @@
+[
+  {
+    "id": 1,
+    "slug": "parque-mexico",
+    "name": "Parque México",
+    "type": "Parque",
+    "date": "2026-03-29",
+    "address": "Condesa, CDMX",
+    "lat": 19.4114,
+    "lng": -99.1713,
+    "image": "/images/places/parque-mexico.jpg",
+    "instagramUrl": "https://instagram.com/",
+    "mapsUrl": "https://maps.google.com/?q=Parque+Mexico+CDMX",
+    "excerpt": "Un espacio abierto para observar árboles, bancas, perros y movimiento cotidiano."
+  },
+  {
+    "id": 2,
+    "slug": "biblioteca-vasconcelos",
+    "name": "Biblioteca Vasconcelos",
+    "type": "Biblioteca",
+    "date": "2026-04-12",
+    "address": "Buenavista, CDMX",
+    "lat": 19.4453,
+    "lng": -99.1471,
+    "image": "/images/places/biblioteca-vasconcelos.jpg",
+    "instagramUrl": "https://instagram.com/",
+    "mapsUrl": "https://maps.google.com/?q=Biblioteca+Vasconcelos+CDMX",
+    "excerpt": "Un lugar para dibujar estructura, luz, silencio y repetición."
+  },
+  {
+    "id": 3,
+    "slug": "cafe-del-centro",
+    "name": "Café del Centro",
+    "type": "Café",
+    "date": "2026-04-26",
+    "address": "Centro, CDMX",
+    "lat": 19.4326,
+    "lng": -99.1332,
+    "image": "/images/places/cafe-del-centro.jpg",
+    "instagramUrl": "https://instagram.com/",
+    "mapsUrl": "https://maps.google.com/?q=Centro+CDMX",
+    "excerpt": "Una sesión más íntima, entre mesas, tazas y conversaciones breves."
+  }
+]

@@ -1,0 +1,97 @@
+<section class="hero">
+  <div class="hero-copy">
+    <p class="eyebrow">archivo · dibujo · encuentro</p>
+    <h1>D³ — Domingos de Dibujar</h1>
+    <p class="intro">
+      Un proyecto de encuentros de dibujo para observar, explorar y compartir
+      sin miedo al trazo.
+    </p>
+
+    <div class="hero-actions">
+      <a href="/mapa-d3" class="btn-primary">Ver mapa D³</a>
+      <a
+        href="https://instagram.com/"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="btn-secondary"
+      >
+        Ir a Instagram
+      </a>
+    </div>
+  </div>
+</section>
+
+<style>
+  .hero {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    min-height: 58vh;
+    padding: 2rem 0 2.5rem;
+    align-items: center;
+  }
+
+  .hero-copy {
+    max-width: 760px;
+  }
+
+  .eyebrow {
+    margin: 0 0 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #d9485f;
+  }
+
+  h1 {
+    margin: 0 0 1rem;
+    font-size: clamp(2.8rem, 8vw, 6rem);
+    line-height: 0.92;
+    letter-spacing: -0.04em;
+    max-width: 10ch;
+  }
+
+  .intro {
+    margin: 0;
+    max-width: 30ch;
+    font-size: 1.1rem;
+    line-height: 1.75;
+  }
+
+  .hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.85rem;
+    margin-top: 1.5rem;
+  }
+
+  .btn-primary,
+  .btn-secondary {
+    display: inline-block;
+    padding: 0.9rem 1.1rem;
+    border: 2px solid #111;
+    border-radius: 999px;
+    text-decoration: none;
+    font-weight: 700;
+    background: rgba(255,255,255,0.69);
+    color: #111;
+    box-shadow: 3px 3px 0 #111;
+  }
+
+  .btn-primary:hover,
+  .btn-secondary:hover {
+    transform: translateY(-1px);
+  }
+
+  @media (max-width: 900px) {
+    .hero {
+      min-height: auto;
+      padding-top: 1rem;
+    }
+
+    .intro {
+      max-width: 36ch;
+    }
+  }
+</style>

@@ -1,0 +1,140 @@
+---
+interface Props {
+  place: {
+    id: number;
+    slug: string;
+    name: string;
+    type: string;
+    date: string;
+    address: string;
+    image: string;
+    instagramUrl: string;
+    mapsUrl: string;
+    excerpt: string;
+  };
+}
+
+const { place } = Astro.props;
+const formattedDate = new Date(place.date).toLocaleDateString("es-MX", {
+  year: "numeric",
+  month: "long",
+  day: "numeric"
+});
+---
+
+<article class="place-card">
+  <a href={`/mapa-d3/${place.slug}`} class="place-image-link">
+    <img src={place.image} alt={place.name} class="place-image" />
+  </a>
+
+  <div class="place-content">
+    <p class="place-type">{place.type}</p>
+    <h3 class="place-title">
+      <a href={`/mapa-d3/${place.slug}`}>{place.name}</a>
+    </h3>
+    <p class="place-date">{formattedDate}</p>
+    <p class="place-address">{place.address}</p>
+    <p class="place-excerpt">{place.excerpt}</p>
+
+    <div class="place-actions">
+      <a href={`/mapa-d3/${place.slug}`} class="btn-primary">Ver lugar</a>
+      <a href={place.instagramUrl} target="_blank" rel="noopener noreferrer" class="btn-secondary">
+        Ver post
+      </a>
+    </div>
+  </div>
+</article>
+
+<style>
+  .place-card {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 1.25rem;
+    border: 2px solid #111;
+    border-radius: 24px;
+    background: rgba(255,255,255,0.69);
+  
+    padding: 1rem;
+    box-shadow: 4px 4px 0 #111;
+  }
+
+  .place-image-link {
+    display: block;
+  }
+
+  .place-image {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    object-fit: cover;
+    border-radius: 18px;
+    border: 2px solid #111;
+    display: block;
+  }
+
+  .place-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .place-type {
+    margin: 0;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #d9485f;
+    font-weight: 700;
+  }
+
+  .place-title {
+    margin: 0;
+    font-size: 1.6rem;
+    line-height: 1.1;
+  }
+
+  .place-title a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .place-date,
+  .place-address,
+  .place-excerpt {
+    margin: 0;
+    line-height: 1.5;
+  }
+
+  .place-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+  }
+
+  .btn-primary,
+  .btn-secondary {
+    display: inline-block;
+    padding: 0.75rem 1rem;
+    border: 2px solid #111;
+    border-radius: 999px;
+    text-decoration: none;
+    font-weight: 700;
+    background: white;
+    color: #111;
+  }
+
+  .btn-primary:hover,
+  .btn-secondary:hover {
+    transform: translateY(-1px);
+  }
+
+  @media (max-width: 720px) {
+    .place-card {
+      grid-template-columns: 1fr;
+    }
+
+    .place-image {
+      aspect-ratio: 16 / 10;
+    }
+  }
+</style>

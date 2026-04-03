@@ -1,0 +1,65 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import PlaceCard from "../components/PlaceCard.astro";
+import MapView from "../components/MapView.astro";
+import places from "../data/places.json";
+---
+
+<BaseLayout title="Mapa D³">
+  <section class="page-hero">
+    <p class="eyebrow">archivo vivo</p>
+    <h1>Mapa D³</h1>
+    <p class="intro">
+      Aquí viven los lugares donde hemos dibujado. Cada ficha guarda una parte
+      del recorrido de D³ y enlaza al post de Instagram de esa sesión.
+    </p>
+  </section>
+
+  <section class="map-section">
+    <MapView places={places} />
+  </section>
+
+  <section class="places-list">
+    {places.map((place) => (
+      <PlaceCard place={place} />
+    ))}
+  </section>
+</BaseLayout>
+
+<style>
+  .page-hero {
+    max-width: 760px;
+    margin-bottom: 2rem;
+  }
+
+  .eyebrow {
+    margin: 0 0 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.8rem;
+    color: #d9485f;
+    font-weight: 700;
+  }
+
+  h1 {
+    margin: 0 0 1rem;
+    font-size: clamp(2.4rem, 6vw, 4.5rem);
+    line-height: 0.95;
+  }
+
+  .intro {
+    margin: 0;
+    font-size: 1.05rem;
+    line-height: 1.7;
+    max-width: 60ch;
+  }
+
+  .map-section {
+    margin: 2rem 0 2.5rem;
+  }
+
+  .places-list {
+    display: grid;
+    gap: 1.5rem;
+  }
+</style>

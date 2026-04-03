@@ -1,0 +1,221 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import places from "../../data/places.json";
+import PlaceMiniMap from "../../components/PlaceMiniMap.astro";
+
+export async function getStaticPaths() {
+  return places.map((place) => ({
+    params: { slug: place.slug },
+    props: { place }
+  }));
+}
+
+const { place } = Astro.props;
+
+const formattedDate = new Date(place.date).toLocaleDateString("es-MX", {
+  year: "numeric",
+  month: "long",
+  day: "numeric"
+});
+---
+
+<BaseLayout title={`${place.name} | Mapa D³`}>
+  <article class="place-page">
+    <a href="/mapa-d3" class="back-link">← Volver a Mapa D³</a>
+
+    <header class="place-header">
+      <p class="place-type">{place.type}</p>
+      <h1>{place.name}</h1>
+      <p class="place-date">{formattedDate}</p>
+    </header>
+
+    <section class="place-hero">
+      <img src={place.image} alt={place.name} class="place-image" />
+    </section>
+
+    <section class="place-grid">
+      <div class="place-main">
+        <div class="notebook-block">
+          <h2>Sobre esta sesión</h2>
+          <p>{place.excerpt}</p>
+          <p>
+            Este lugar forma parte del recorrido de D³. Aquí guardamos una memoria
+            breve de la sesión y un puente hacia la publicación de Instagram,
+            donde viven las fotos, comentarios y trazos compartidos.
+          </p>
+        </div>
+
+        <div class="notebook-block">
+          <h2>Ver la sesión completa</h2>
+          <p>
+            Para ver dibujos, fotos y conversación alrededor de esta sesión,
+            visita la publicación en Instagram.
+          </p>
+
+          <div class="actions">
+            <a
+              href={place.instagramUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="btn-primary"
+            >
+              Ver publicación en Instagram
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <aside class="place-sidebar">
+        <div class="info-card">
+          <h3>Datos del lugar</h3>
+          <ul>
+            <li><strong>Tipo:</strong> {place.type}</li>
+            <li><strong>Fecha:</strong> {formattedDate}</li>
+            <li><strong>Dirección:</strong> {place.address}</li>
+          </ul>
+
+          <a
+            href={place.mapsUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="btn-secondary full"
+          >
+            Ver en Google Maps
+          </a>
+        </div>
+
+        <div class="map-card">
+          <h3>Mapa</h3>
+          <PlaceMiniMap lat={place.lat} lng={place.lng} name={place.name} />
+        </div>
+      </aside>
+    </section>
+  </article>
+</BaseLayout>
+
+<style>
+  .place-page {
+    display: grid;
+    gap: 1.75rem;
+  }
+
+  .back-link {
+    width: fit-content;
+    text-decoration: none;
+    color: #111;
+    font-weight: 700;
+  }
+
+  .place-header h1 {
+    margin: 0.25rem 0 0.5rem;
+    font-size: clamp(2.3rem, 6vw, 4.4rem);
+    line-height: 0.95;
+  }
+
+  .place-type {
+    margin: 0;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.8rem;
+    color: #d9485f;
+    font-weight: 700;
+  }
+
+  .place-date {
+    margin: 0;
+    font-size: 1rem;
+  }
+
+  .place-image {
+    width: 100%;
+    max-height: 520px;
+    object-fit: cover;
+    border: 2px solid #111;
+    border-radius: 28px;
+    display: block;
+    box-shadow: 5px 5px 0 #111;
+    background: #fff;
+  }
+
+  .place-grid {
+    display: grid;
+    grid-template-columns: 1.5fr 0.9fr;
+    gap: 1.5rem;
+    align-items: start;
+  }
+
+  .place-main,
+  .place-sidebar {
+    display: grid;
+    gap: 1.25rem;
+  }
+
+  .notebook-block,
+  .info-card,
+  .map-card {
+    background: rgba(255, 255, 255, 0.88);
+    border: 2px solid #111;
+    border-radius: 24px;
+    box-shadow: 4px 4px 0 #111;
+    padding: 1.25rem;
+  }
+
+  .notebook-block h2,
+  .info-card h3,
+  .map-card h3 {
+    margin-top: 0;
+    margin-bottom: 0.8rem;
+  }
+
+  .notebook-block p {
+    line-height: 1.7;
+    margin-top: 0;
+  }
+
+  .info-card ul {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 1rem;
+    display: grid;
+    gap: 0.7rem;
+  }
+
+  .mini-map {
+    min-height: 220px;
+    border: 2px dashed #111;
+    border-radius: 18px;
+    display: grid;
+    place-items: center;
+    text-align: center;
+    padding: 1rem;
+    background: rgba(255,255,255,0.5);
+  }
+
+  .actions {
+    margin-top: 1rem;
+  }
+
+  .btn-primary,
+  .btn-secondary {
+    display: inline-block;
+    padding: 0.8rem 1rem;
+    border: 2px solid #111;
+    border-radius: 999px;
+    text-decoration: none;
+    font-weight: 700;
+    background: white;
+    color: #111;
+  }
+
+  .full {
+    width: 100%;
+    text-align: center;
+    box-sizing: border-box;
+  }
+
+  @media (max-width: 900px) {
+    .place-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

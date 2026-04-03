@@ -1,0 +1,38 @@
+[
+  {
+    "title": "Contorno ciego",
+    "duration": "5–10 min",
+    "purpose": "Ayuda a observar más de lo que corriges.",
+    "description": "Mira el objeto sin despegar la vista de él y dibuja su contorno sin mirar la hoja."
+  },
+  {
+    "title": "Dibujo en negativo",
+    "duration": "10–15 min",
+    "purpose": "Te ayuda a entender formas desde los espacios vacíos.",
+    "description": "En lugar de dibujar el objeto, dibuja los espacios que lo rodean."
+  },
+  {
+    "title": "Mano no dominante",
+    "duration": "5 min",
+    "purpose": "Rompe la expectativa de control y perfección.",
+    "description": "Haz un dibujo rápido usando la mano con la que normalmente no escribes."
+  },
+  {
+    "title": "Sin levantar el lápiz",
+    "duration": "5–10 min",
+    "purpose": "Favorece la continuidad del trazo y la soltura.",
+    "description": "Dibuja una escena o un objeto manteniendo el lápiz sobre el papel todo el tiempo."
+  },
+  {
+    "title": "Tiempos cortos",
+    "duration": "1–3 min por dibujo",
+    "purpose": "Te obliga a sintetizar y observar lo esencial.",
+    "description": "Haz varios dibujos rápidos del mismo objeto o escena en lapsos breves."
+  },
+  {
+    "title": "Solo sombras",
+    "duration": "10 min",
+    "purpose": "Te hace pensar el dibujo desde manchas y peso visual.",
+    "description": "Olvida el contorno y dibuja únicamente las zonas de sombra."
+  }
+]

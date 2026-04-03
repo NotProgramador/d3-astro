@@ -1,0 +1,52 @@
+---
+import { site } from '../data/site';
+---
+
+<footer class="site-footer">
+  <div class="container surface site-footer__inner">
+    <div>
+      <strong>D³ — Domingos de Dibujar</strong>
+      <p>Archivo sensible de sesiones, lugares y ejercicios para soltar la mano.</p>
+    </div>
+
+    <div class="site-footer__links">
+      <a href={site.instagramUrl} target="_blank" rel="noreferrer">Instagram</a>
+      <a href="/mapa-d3">Mapa D³</a>
+      <a href="/contacto">Contacto / Apoya</a>
+    </div>
+  </div>
+</footer>
+
+<style>
+  .site-footer {
+    padding: 2rem 0 3rem;
+  }
+
+  .site-footer__inner {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1.4rem;
+  }
+
+  .site-footer p {
+    margin: 0.45rem 0 0;
+    max-width: 48ch;
+    color: var(--muted);
+  }
+
+  .site-footer__links {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    font-weight: 700;
+  }
+
+  @media (min-width: 780px) {
+    .site-footer__inner {
+      flex-direction: row;
+      justify-content: space-between;
+      align-items: center;
+    }
+  }
+</style>

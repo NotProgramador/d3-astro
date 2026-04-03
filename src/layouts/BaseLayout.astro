@@ -1,0 +1,33 @@
+---
+import "../styles/global.css";
+import Header from "../components/Header.astro";
+import Footer from "../components/Footer.astro";
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const {
+  title = "D³ — Domingos de Dibujar",
+  description = "Archivo web de D³: mapa de lugares, primeros trazos, Tinta y contacto."
+} = Astro.props;
+---
+
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="icon" type="image/png" href="/images/ui/d3logo.PNG" />
+  </head>
+  <body>
+    <Header />
+    <main class="page-shell">
+      <slot />
+    </main>
+    <Footer />
+  </body>
+</html>

@@ -1,0 +1,162 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import ExerciseCard from "../components/ExerciseCard.astro";
+import exercises from "../data/exercises.json";
+
+const tips = [
+  "Dibuja para entender, no para demostrar.",
+  "Observa más de lo que corriges.",
+  "No todo trazo necesita ser bonito para ser valioso.",
+  "El error también forma parte de la mirada.",
+  "A veces mirar distinto ya es dibujar distinto.",
+  "Suelta la mano antes de pedirle precisión."
+];
+---
+
+<BaseLayout title="Primeros trazos | D³">
+  <section class="page-hero">
+    <p class="eyebrow">primeros trazos</p>
+    <h1>Ejercicios para mirar distinto</h1>
+    <p class="intro">
+      Una pequeña colección de ejercicios y notas para soltar la mano, observar
+      sin juicio y acercarse al dibujo como presencia, exploración y práctica.
+    </p>
+  </section>
+
+  <section class="exercise-grid">
+    {exercises.map((exercise) => (
+      <ExerciseCard exercise={exercise} />
+    ))}
+  </section>
+
+  <section class="tips-section">
+    <div class="tips-card">
+      <p class="eyebrow">notas</p>
+      <h2>Tips para empezar</h2>
+
+      <ul>
+        {tips.map((tip) => (
+          <li>{tip}</li>
+        ))}
+      </ul>
+    </div>
+  </section>
+
+  <section class="closing">
+    <p>
+      Estos ejercicios no buscan perfección: buscan abrir espacio para mirar,
+      probar y habitar el trazo con más libertad.
+    </p>
+
+    <div class="actions">
+      <a href="/mapa-d3" class="btn-primary">Explorar Mapa D³</a>
+      <a
+        href="https://instagram.com/"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="btn-secondary"
+      >
+        Ver Instagram
+      </a>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .page-hero {
+    max-width: 760px;
+    margin: 1rem 0 2rem;
+  }
+
+  .eyebrow {
+    margin: 0 0 0.45rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #d9485f;
+  }
+
+  h1 {
+    margin: 0 0 1rem;
+    font-size: clamp(2.4rem, 6vw, 4.5rem);
+    line-height: 0.95;
+    max-width: 10ch;
+  }
+
+  .intro {
+    margin: 0;
+    max-width: 62ch;
+    line-height: 1.8;
+    font-size: 1.05rem;
+  }
+
+  .exercise-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.2rem;
+    margin-bottom: 2.5rem;
+  }
+
+  .tips-section {
+    margin-bottom: 2.5rem;
+  }
+
+  .tips-card {
+    background: rgba(255, 255, 255, 0.74);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    border: 2px solid #111;
+    border-radius: 28px;
+    padding: 1.4rem;
+    box-shadow: 4px 4px 0 #111;
+    max-width: 860px;
+  }
+
+  .tips-card h2 {
+    margin: 0 0 1rem;
+    font-size: 2rem;
+  }
+
+  .tips-card ul {
+    margin: 0;
+    padding-left: 1.2rem;
+    line-height: 1.9;
+  }
+
+  .closing {
+    padding-bottom: 2rem;
+    max-width: 780px;
+  }
+
+  .closing p {
+    line-height: 1.8;
+    font-size: 1.05rem;
+  }
+
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.8rem;
+    margin-top: 1rem;
+  }
+
+  .btn-primary,
+  .btn-secondary {
+    display: inline-block;
+    padding: 0.9rem 1.1rem;
+    border: 2px solid #111;
+    border-radius: 999px;
+    text-decoration: none;
+    font-weight: 700;
+    background: rgba(255,255,255,0.92);
+    color: #111;
+    box-shadow: 3px 3px 0 #111;
+  }
+
+  @media (max-width: 900px) {
+    .exercise-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

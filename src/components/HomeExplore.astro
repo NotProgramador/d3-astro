@@ -1,0 +1,105 @@
+---
+const items = [
+  {
+    title: "Primeros trazos",
+    text: "Ejercicios y tips para soltar la mano y mirar distinto.",
+    href: "/primeros-trazos"
+  },
+  {
+    title: "Mapa D³",
+    text: "Un archivo de los lugares donde hemos dibujado.",
+    href: "/mapa-d3"
+  },
+  {
+    title: "Tinta",
+    text: "Mini tiras y un universo narrativo sensible dentro del proyecto.",
+    href: "/tinta"
+  }
+];
+---
+
+<section class="explore">
+  <div class="section-head">
+    <p class="eyebrow">explora</p>
+    <h2>Recorre el proyecto</h2>
+  </div>
+
+  <div class="explore-grid">
+    {items.map((item) => (
+      <a href={item.href} class="explore-card">
+        <h3>{item.title}</h3>
+        <p>{item.text}</p>
+        <span>Entrar →</span>
+      </a>
+    ))}
+  </div>
+</section>
+
+<style>
+  .explore {
+    margin: 3rem 0;
+  }
+
+  .section-head {
+    margin-bottom: 1.25rem;
+  }
+
+  .eyebrow {
+    margin: 0 0 0.4rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #d9485f;
+  }
+
+  .section-head h2 {
+    margin: 0;
+    font-size: clamp(2rem, 4vw, 3rem);
+    line-height: 0.95;
+  }
+
+  .explore-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.2rem;
+  }
+
+  .explore-card {
+  display: block;
+  background: rgba(255, 255, 255, 0.74);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  border: 2px solid #111;
+  border-radius: 24px;
+  padding: 1.25rem;
+  text-decoration: none;
+  color: #111;
+  box-shadow: 4px 4px 0 #111;
+  transition: transform 0.15s ease;
+}
+
+  .explore-card:hover {
+    transform: translateY(-2px);
+  }
+
+  .explore-card h3 {
+    margin: 0 0 0.75rem;
+    font-size: 1.35rem;
+  }
+
+  .explore-card p {
+    margin: 0 0 1rem;
+    line-height: 1.7;
+  }
+
+  .explore-card span {
+    font-weight: 700;
+  }
+
+  @media (max-width: 900px) {
+    .explore-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
