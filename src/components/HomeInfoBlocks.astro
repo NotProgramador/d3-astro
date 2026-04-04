@@ -1,5 +1,5 @@
 <section class="home-grid">
-  <article class="note-card">
+  <article class="note-card paper-card">
     <h2>Qué es D³</h2>
     <p>
       D³ entiende el dibujo como una forma de observar, conectar y habitar el
@@ -7,7 +7,7 @@
     </p>
   </article>
 
-  <article class="note-card">
+  <article class="note-card paper-card">
     <h2>Cómo seguirlo</h2>
     <p>
       La actividad viva del proyecto sucede en Instagram. Aquí en la web vive su
@@ -15,7 +15,7 @@
     </p>
   </article>
 
-  <article class="note-card">
+  <article class="note-card paper-card">
     <h2>Qué puedes explorar</h2>
     <p>
       El mapa de sesiones pasadas, ejercicios para soltar la mano, Tinta y las
@@ -34,24 +34,20 @@
   }
 
   .note-card {
-  background: rgba(255, 255, 255, 0.79);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-  border: 2px solid #111;
-  border-radius: 24px;
-  padding: 1.25rem;
-  box-shadow: 4px 4px 0 #111;
-  min-height: 170px;
-}
+    min-height: 176px;
+  }
 
   .note-card h2 {
     margin: 0 0 0.7rem;
-    font-size: 1.25rem;
+    font-size: 1.32rem;
+    line-height: 1.08;
+    max-width: 12ch;
   }
 
   .note-card p {
     margin: 0;
-    line-height: 1.7;
+    line-height: 1.72;
+    color: var(--ink-soft);
   }
 
   @media (max-width: 900px) {
@@ -61,6 +57,10 @@
 
     .note-card {
       min-height: auto;
+    }
+
+    .note-card h2 {
+      max-width: none;
     }
   }
 </style>

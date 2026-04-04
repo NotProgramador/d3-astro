@@ -1,10 +1,25 @@
 :root {
   --paper: #f4f1ea;
-  --ink: #111111;
+  --ink: #171411;
+  --ink-soft: #544c45;
   --accent: #d9485f;
+
   --page-max: 1240px;
   --page-pad-x: 32px;
   --left-rule-space: 88px;
+
+  --card-bg: rgba(255, 255, 255, 0.74);
+  --card-border: rgba(17, 17, 17, 0.82);
+  --card-line-soft: rgba(17, 17, 17, 0.10);
+
+  --card-radius: 3px;
+  --card-pad: 1.25rem;
+
+  --shadow-float: 4px 4px 0 #11111140;
+
+  --font-body: "Avenir Next", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  --font-display: "Georgia", "Times New Roman", serif;
+  --font-accent: "Trebuchet MS", "Segoe UI", sans-serif;
 }
 
 * {
@@ -12,16 +27,22 @@
 }
 
 html {
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body);
   color: var(--ink);
+  font-size: 16px;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 body {
   margin: 0;
+  color: var(--ink);
   background-color: var(--paper);
   background-image: url("../images/ui/hojacuadernorepeat.jpg");
   background-repeat: repeat;
   background-size: 620px auto;
+  line-height: 1.65;
 }
 
 img {
@@ -31,6 +52,49 @@ img {
 
 a {
   color: inherit;
+}
+
+p {
+  margin: 0 0 1rem;
+}
+
+small,
+.text-muted,
+.muted {
+  color: var(--ink-soft);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  margin: 0 0 0.55rem;
+  font-family: var(--font-display);
+  font-weight: 700;
+  line-height: 1.12;
+  letter-spacing: 0.01em;
+  color: var(--ink);
+}
+
+h1 {
+  font-size: clamp(2.2rem, 4.5vw, 4rem);
+}
+
+h2 {
+  font-size: clamp(1.65rem, 3vw, 2.5rem);
+}
+
+h3 {
+  font-size: clamp(1.15rem, 2vw, 1.55rem);
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
 }
 
 .page-shell {
@@ -50,6 +114,41 @@ a {
   width: 3px;
   background: var(--accent);
   border-radius: 999px;
+}
+
+/* base común para cards y bloques translúcidos */
+.paper-card {
+  position: relative;
+  background: var(--card-bg);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  border: 1.5px solid var(--card-border);
+  border-radius: var(--card-radius);
+  padding: var(--card-pad);
+  box-shadow: var(--shadow-float);
+}
+
+.paper-card::after {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border: 1px solid var(--card-line-soft);
+  border-radius: 1px;
+  pointer-events: none;
+}
+
+.sketch-label {
+  display: inline-block;
+  font-family: var(--font-accent);
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.section-intro {
+  max-width: 62ch;
+  color: var(--ink-soft);
 }
 
 @media (max-width: 900px) {

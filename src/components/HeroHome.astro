@@ -27,16 +27,17 @@
     grid-template-columns: 1fr;
     gap: 2rem;
     min-height: 58vh;
-    padding: 2rem 0 2.5rem;
+    padding: 2rem 0 2.75rem;
     align-items: center;
   }
 
   .hero-copy {
-    max-width: 760px;
+    max-width: 780px;
   }
 
   .eyebrow {
-    margin: 0 0 0.75rem;
+    margin: 0 0 0.8rem;
+    font-family: var(--font-accent);
     text-transform: uppercase;
     letter-spacing: 0.08em;
     font-size: 0.78rem;
@@ -46,42 +47,49 @@
 
   h1 {
     margin: 0 0 1rem;
-    font-size: clamp(2.8rem, 8vw, 6rem);
-    line-height: 0.92;
-    letter-spacing: -0.04em;
-    max-width: 10ch;
+    font-size: clamp(2.9rem, 8vw, 5.7rem);
+    line-height: 0.96;
+    letter-spacing: -0.035em;
+    max-width: 9.5ch;
   }
 
   .intro {
     margin: 0;
-    max-width: 30ch;
-    font-size: 1.1rem;
-    line-height: 1.75;
+    max-width: 34ch;
+    font-size: 1.08rem;
+    line-height: 1.78;
+    color: var(--ink-soft);
   }
 
   .hero-actions {
     display: flex;
     flex-wrap: wrap;
     gap: 0.85rem;
-    margin-top: 1.5rem;
+    margin-top: 1.55rem;
   }
 
   .btn-primary,
   .btn-secondary {
-    display: inline-block;
-    padding: 0.9rem 1.1rem;
-    border: 2px solid #111;
-    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     text-decoration: none;
     font-weight: 700;
-    background: rgba(255,255,255,0.69);
     color: #111;
-    box-shadow: 3px 3px 0 #111;
+    background: rgba(255, 255, 255, 0.74);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    border: 1.5px solid rgba(17, 17, 17, 0.82);
+    border-radius: 3px;
+    padding: 0.9rem 1.15rem;
+    box-shadow: 4px 4px 0 #11111140;
+    transition: transform 140ms ease, box-shadow 140ms ease;
   }
 
   .btn-primary:hover,
   .btn-secondary:hover {
     transform: translateY(-1px);
+    box-shadow: 5px 5px 0 #11111133;
   }
 
   @media (max-width: 900px) {

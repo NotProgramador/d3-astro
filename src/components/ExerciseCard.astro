@@ -11,7 +11,7 @@ interface Props {
 const { exercise } = Astro.props;
 ---
 
-<article class="exercise-card">
+<article class="exercise-card paper-card">
   <p class="duration">{exercise.duration}</p>
   <h3>{exercise.title}</h3>
   <p class="description">{exercise.description}</p>
@@ -20,19 +20,13 @@ const { exercise } = Astro.props;
 
 <style>
   .exercise-card {
-    background: rgba(255, 255, 255, 0.74);
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
-    border: 2px solid #111;
-    border-radius: 24px;
-    padding: 1.2rem;
-    box-shadow: 4px 4px 0 #111;
     display: grid;
-    gap: 0.7rem;
+    gap: 0.72rem;
   }
 
   .duration {
     margin: 0;
+    font-family: var(--font-accent);
     text-transform: uppercase;
     letter-spacing: 0.08em;
     font-size: 0.75rem;
@@ -42,13 +36,19 @@ const { exercise } = Astro.props;
 
   h3 {
     margin: 0;
-    font-size: 1.3rem;
-    line-height: 1.1;
+    font-size: 1.32rem;
+    line-height: 1.08;
+    max-width: 16ch;
   }
 
   .description,
   .purpose {
     margin: 0;
-    line-height: 1.7;
+    line-height: 1.72;
+    color: var(--ink-soft);
+  }
+
+  .purpose strong {
+    color: var(--ink);
   }
 </style>
