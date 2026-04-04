@@ -1,12 +1,158 @@
 ---
-import BaseLayout from '../layouts/BaseLayout.astro';
+import BaseLayout from "../layouts/BaseLayout.astro";
 ---
 
-<BaseLayout title="contacto — D³">
-  <div class="container">
-    <section class="section">
-      <h1 class="page-title">contacto</h1>
-      <p class="page-intro">Esta página es un placeholder inicial para empezar a construir la versión real del sitio.</p>
-    </section>
-  </div>
+<BaseLayout title="Contacto / Apoya — D³">
+  <section class="page-hero">
+    <p class="eyebrow">contacto · colaboraciones · apoyo</p>
+    <h1>Contacto / Apoya</h1>
+    <p class="intro">
+      Si quieres escribir, proponer una colaboración, tomar clases, organizar un
+      taller o apoyar el crecimiento de D³, aquí está el punto de partida.
+    </p>
+  </section>
+
+  <section class="contact-grid">
+    <article class="contact-card paper-card">
+      <h2>Contacto</h2>
+      <p>
+        Para seguir el proyecto, escribir o estar pendiente de publicaciones y
+        próximas actividades:
+      </p>
+
+      <ul>
+        <li>
+          <strong>Instagram:</strong>
+          <a
+            href="https://www.instagram.com/domingosdedibujar/"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            @domingosdedibujar
+          </a>
+        </li>
+        <li>
+          <strong>Correo:</strong>
+          <a href="mailto:domingosdedibujar@gmail.com">domingosdedibujar@gmail.com</a>
+        </li>
+      </ul>
+    </article>
+
+    <article class="contact-card paper-card">
+      <h2>Colaboraciones / clases / talleres</h2>
+      <p>
+        D³ también puede crecer a través de procesos formativos o colaborativos.
+        Si buscas una propuesta sensible y cercana al dibujo como práctica viva,
+        podemos construir algo juntos.
+      </p>
+
+      <ul>
+        <li>Clases particulares de dibujo</li>
+        <li>Talleres para principiantes</li>
+        <li>Sesiones para grupos pequeños</li>
+        <li>Colaboraciones con espacios, proyectos o comunidades</li>
+      </ul>
+    </article>
+
+    <article class="contact-card paper-card">
+      <h2>Apoyo / donar</h2>
+      <p>
+        Si quieres impulsar el proyecto y ayudar a que existan más sesiones,
+        materiales, archivo y próximas actividades, este espacio también servirá
+        para reunir formas de apoyo.
+      </p>
+
+      <ul>
+        <li>Apoyo económico para próximas actividades</li>
+        <li>Materiales para sesiones y talleres</li>
+        <li>Impulso para producción visual y archivo del proyecto</li>
+      </ul>
+
+      <p class="support-note">
+        Próximamente aquí puede aparecer una forma directa de donar o apoyar.
+      </p>
+    </article>
+  </section>
 </BaseLayout>
+
+<style>
+  .page-hero {
+    max-width: 780px;
+    margin-bottom: 1.75rem;
+  }
+
+  .eyebrow {
+    margin: 0 0 0.5rem;
+    font-family: var(--font-accent);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.8rem;
+    color: #d9485f;
+    font-weight: 700;
+  }
+
+  h1 {
+    margin: 0 0 1rem;
+    font-size: clamp(2.3rem, 6vw, 4.6rem);
+    line-height: 0.95;
+    max-width: 10ch;
+  }
+
+  .intro {
+    margin: 0;
+    max-width: 60ch;
+    color: var(--ink-soft);
+    line-height: 1.72;
+    font-size: 1.05rem;
+  }
+
+  .contact-grid {
+  display: grid;
+  gap: 1.2rem;
+  grid-template-columns: 1fr;
+  margin-bottom: 2rem;
+  max-width: 920px;
+}
+
+  .contact-card {
+    position: relative;
+    min-height: 100%;
+  }
+
+  .contact-card h2 {
+    margin-bottom: 0.75rem;
+    max-width: 14ch;
+  }
+
+  .contact-card p,
+  .contact-card li {
+    color: var(--ink-soft);
+    line-height: 1.72;
+  }
+
+  .contact-card ul {
+    margin: 0.9rem 0 0;
+    padding-left: 1.1rem;
+  }
+
+  .contact-card a {
+    color: inherit;
+    text-decoration: none;
+    border-bottom: 1px solid rgba(17, 17, 17, 0.24);
+  }
+
+  .contact-card a:hover {
+    border-bottom-color: rgba(17, 17, 17, 0.55);
+  }
+
+  .support-note {
+    margin-top: 1rem;
+    font-style: italic;
+  }
+
+  @media (max-width: 900px) {
+    .contact-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

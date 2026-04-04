@@ -33,11 +33,8 @@ const mobileMenuLabel =
     <nav class="nav nav-desktop" aria-label="Navegación principal">
       {navItems.map((item) => (
         <a href={item.href} class={`nav-link ${isActive(item.href) ? "is-active" : ""}`}>
-          <span>{item.label}</span>
-          {isActive(item.href) && (
-            <img src="/images/ui/equis.PNG" alt="" class="nav-x" />
-          )}
-        </a>
+  <span>{item.label}</span>
+</a>
       ))}
     </nav>
 
@@ -48,12 +45,9 @@ const mobileMenuLabel =
 
       <nav class="mobile-panel" aria-label="Navegación móvil">
         {navItems.map((item) => (
-          <a href={item.href} class={`mobile-link ${isActive(item.href) ? "is-active" : ""}`}>
-            <span>{item.label}</span>
-            {isActive(item.href) && (
-              <img src="/images/ui/equis.PNG" alt="" class="mobile-x" />
-            )}
-          </a>
+          <a href={item.href} class={`nav-link ${isActive(item.href) ? "is-active" : ""}`}>
+  <span>{item.label}</span>
+</a>
         ))}
       </nav>
     </details>
@@ -128,7 +122,7 @@ const mobileMenuLabel =
     color: #111;
     font-size: 0.96rem;
     font-weight: 500;
-    padding: 0.15rem 0 0.95rem;
+    padding: 0.2rem 0 1rem;
     white-space: nowrap;
   }
 
@@ -141,17 +135,23 @@ const mobileMenuLabel =
     color: rgba(17, 17, 17, 0.76);
   }
 
-  .nav-x {
-    position: absolute;
-    bottom: -1px;
-    width: 20px;
-    height: auto;
-    pointer-events: none;
-  }
-
-  .is-active {
+  .nav-link.is-active {
     font-weight: 700;
   }
+
+  .nav-link.is-active::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 0.80rem;
+  width: 34px;
+  height: 3px;
+  transform: translateX(-50%) rotate(-1deg);
+  background: #d9485f;
+  border-radius: 999px;
+  opacity: 0.95;
+  pointer-events: none;
+}
 
   .mobile-menu {
     display: none;
@@ -219,33 +219,33 @@ const mobileMenuLabel =
     }
 
     .mobile-menu-toggle {
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 40px;
-  width: 150px;
-  padding: 0.58rem 0.8rem;
-  border: 1.5px solid rgba(17, 17, 17, 0.82);
-  border-radius: 3px;
-  background: rgba(255, 255, 255, 0.72);
-  box-shadow: 4px 4px 0 #11111132;
-  color: #111;
-  user-select: none;
-}
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 40px;
+      width: 150px;
+      padding: 0.58rem 0.8rem;
+      border: 1.5px solid rgba(17, 17, 17, 0.82);
+      border-radius: 3px;
+      background: rgba(255, 255, 255, 0.72);
+      box-shadow: 4px 4px 0 #11111132;
+      color: #111;
+      user-select: none;
+    }
 
     .mobile-menu-label {
-  display: block;
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font-family: var(--font-accent);
-  font-size: 0.9rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  line-height: 1;
-  white-space: nowrap;
-}
+      display: block;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-family: var(--font-accent);
+      font-size: 0.9rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      line-height: 1;
+      white-space: nowrap;
+    }
 
     .mobile-panel {
       position: absolute;
@@ -283,13 +283,19 @@ const mobileMenuLabel =
 
     .mobile-link.is-active {
       font-weight: 700;
+      color: #111;
     }
 
-    .mobile-x {
-      width: 22px;
-      height: auto;
-      flex-shrink: 0;
-    }
+    .mobile-link.is-active::after {
+  content: "";
+  width: 26px;
+  height: 3px;
+  margin-left: 0.35rem;
+  border-radius: 999px;
+  background: #d9485f;
+  transform: rotate(-2deg);
+  flex-shrink: 0;
+}
   }
 
   @media (max-width: 560px) {

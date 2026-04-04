@@ -1,4 +1,8 @@
 <section class="hero">
+  <div class="hero-stamp" aria-hidden="true">
+    <img src="/images/ui/d3logo.PNG" alt="" class="stamp-logo" />
+  </div>
+
   <div class="hero-copy">
     <p class="eyebrow">archivo · dibujo · encuentro</p>
     <h1>D³ — Domingos de Dibujar</h1>
@@ -23,16 +27,42 @@
 
 <style>
   .hero {
+    position: relative;
     display: grid;
     grid-template-columns: 1fr;
     gap: 2rem;
     min-height: 58vh;
     padding: 2rem 0 2.75rem;
     align-items: center;
+    overflow: hidden;
   }
+
+  .hero-stamp {
+  position: absolute;
+  right: 8%;
+  top: 2.2rem;
+  width: clamp(220px, 30vw, 360px);
+  opacity: 0.52;
+  transform: rotate(-12deg);
+  pointer-events: none;
+  mix-blend-mode: multiply;
+  z-index: 0;
+}
+
+
+  .stamp-logo {
+  width: 100%;
+  filter:
+    contrast(1.35)
+    saturate(1.35)
+    brightness(0.96)
+    blur(0.15px);
+}
 
   .hero-copy {
     max-width: 780px;
+    position: relative;
+    z-index: 1;
   }
 
   .eyebrow {
@@ -96,6 +126,13 @@
     .hero {
       min-height: auto;
       padding-top: 1rem;
+    }
+
+    .hero-stamp {
+      right: 0;
+      top: 2.4rem;
+      width: 120px;
+      opacity: 0.18;
     }
 
     .intro {
