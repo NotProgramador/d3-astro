@@ -22,7 +22,7 @@ const formattedDate = new Date(place.date).toLocaleDateString("es-MX", {
 });
 ---
 
-<article class="place-card">
+<article class="place-card paper-card">
   <a href={`/mapa-d3/${place.slug}`} class="place-image-link">
     <img src={place.image} alt={place.name} class="place-image" />
   </a>
@@ -50,12 +50,7 @@ const formattedDate = new Date(place.date).toLocaleDateString("es-MX", {
     display: grid;
     grid-template-columns: 220px 1fr;
     gap: 1.25rem;
-    border: 2px solid #111;
-    border-radius: 24px;
-    background: rgba(255,255,255,0.69);
-  
-    padding: 1rem;
-    box-shadow: 4px 4px 0 #111;
+    align-items: start;
   }
 
   .place-image-link {
@@ -66,9 +61,10 @@ const formattedDate = new Date(place.date).toLocaleDateString("es-MX", {
     width: 100%;
     aspect-ratio: 1 / 1;
     object-fit: cover;
-    border-radius: 18px;
-    border: 2px solid #111;
+    border-radius: 3px;
+    border: 1.5px solid rgba(17, 17, 17, 0.82);
     display: block;
+    box-shadow: 3px 3px 0 #11111124;
   }
 
   .place-content {
@@ -79,7 +75,8 @@ const formattedDate = new Date(place.date).toLocaleDateString("es-MX", {
 
   .place-type {
     margin: 0;
-    font-size: 0.8rem;
+    font-family: var(--font-accent);
+    font-size: 0.78rem;
     text-transform: uppercase;
     letter-spacing: 0.08em;
     color: #d9485f;
@@ -89,7 +86,8 @@ const formattedDate = new Date(place.date).toLocaleDateString("es-MX", {
   .place-title {
     margin: 0;
     font-size: 1.6rem;
-    line-height: 1.1;
+    line-height: 1.06;
+    max-width: 16ch;
   }
 
   .place-title a {
@@ -101,31 +99,37 @@ const formattedDate = new Date(place.date).toLocaleDateString("es-MX", {
   .place-address,
   .place-excerpt {
     margin: 0;
-    line-height: 1.5;
+    line-height: 1.65;
+    color: var(--ink-soft);
   }
 
   .place-actions {
     display: flex;
     flex-wrap: wrap;
     gap: 0.75rem;
-    margin-top: 0.5rem;
+    margin-top: 0.55rem;
   }
 
   .btn-primary,
   .btn-secondary {
-    display: inline-block;
-    padding: 0.75rem 1rem;
-    border: 2px solid #111;
-    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.78rem 1rem;
+    border: 1.5px solid rgba(17, 17, 17, 0.82);
+    border-radius: 3px;
     text-decoration: none;
     font-weight: 700;
-    background: white;
+    background: rgba(255, 255, 255, 0.74);
     color: #111;
+    box-shadow: 4px 4px 0 #11111140;
+    transition: transform 140ms ease, box-shadow 140ms ease;
   }
 
   .btn-primary:hover,
   .btn-secondary:hover {
     transform: translateY(-1px);
+    box-shadow: 5px 5px 0 #11111133;
   }
 
   @media (max-width: 720px) {
@@ -135,6 +139,10 @@ const formattedDate = new Date(place.date).toLocaleDateString("es-MX", {
 
     .place-image {
       aspect-ratio: 16 / 10;
+    }
+
+    .place-title {
+      max-width: none;
     }
   }
 </style>

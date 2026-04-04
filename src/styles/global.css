@@ -128,14 +128,6 @@ select {
   box-shadow: var(--shadow-float);
 }
 
-.paper-card::after {
-  content: "";
-  position: absolute;
-  inset: 4px;
-  border: 1px solid var(--card-line-soft);
-  border-radius: 1px;
-  pointer-events: none;
-}
 
 .sketch-label {
   display: inline-block;

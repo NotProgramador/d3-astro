@@ -1,0 +1,327 @@
+---
+import type { ExerciseItem } from "../data/exercises";
+
+const { items = [] } = Astro.props as { items: ExerciseItem[] };
+---
+
+<section class="accordion">
+  {items.map((item) => (
+    <details class="accordion-item paper-card" name="primeros-trazos">
+      <summary class="accordion-summary">
+        <div class="summary-copy">
+          {item.duration && <p class="duration">{item.duration}</p>}
+          <h3>{item.title}</h3>
+          <p class="summary-text">{item.summary}</p>
+        </div>
+
+        <span class="toggle" aria-hidden="true">+</span>
+      </summary>
+
+      <div class="accordion-body">
+        {item.description && (
+          <div class="content-block">
+            <h4>En qué consiste</h4>
+            <p>{item.description}</p>
+          </div>
+        )}
+
+        {item.objective && (
+          <div class="content-block">
+            <h4>Objetivo</h4>
+            <p>{item.objective}</p>
+          </div>
+        )}
+
+        {item.recommendation && (
+          <div class="content-block">
+            <h4>Recomendación</h4>
+            <p>{item.recommendation}</p>
+          </div>
+        )}
+
+        {item.materials && item.materials.length > 0 && (
+          <div class="content-block">
+            <h4>Materiales</h4>
+            <ul>
+              {item.materials.map((material) => <li>{material}</li>)}
+            </ul>
+          </div>
+        )}
+
+        {item.steps && item.steps.length > 0 && (
+          <div class="content-block">
+            <h4>Pasos</h4>
+            <ol>
+              {item.steps.map((step) => <li>{step}</li>)}
+            </ol>
+          </div>
+        )}
+
+        {item.idealFor && item.idealFor.length > 0 && (
+          <div class="content-block">
+            <h4>Ideal para</h4>
+            <ul>
+              {item.idealFor.map((entry) => <li>{entry}</li>)}
+            </ul>
+          </div>
+        )}
+
+        {item.examples && item.examples.length > 0 && (
+          <div class="content-block">
+            <h4>Ejemplos</h4>
+            <ul>
+              {item.examples.map((example) => <li>{example}</li>)}
+            </ul>
+          </div>
+        )}
+
+        {item.variants && item.variants.length > 0 && (
+          <div class="content-block">
+            <h4>Variantes</h4>
+            <ul>
+              {item.variants.map((variant) => <li>{variant}</li>)}
+            </ul>
+          </div>
+        )}
+
+        {item.mistakes && item.mistakes.length > 0 && (
+          <div class="content-block">
+            <h4>Errores comunes</h4>
+            <ul>
+              {item.mistakes.map((mistake) => <li>{mistake}</li>)}
+            </ul>
+          </div>
+        )}
+
+        {item.image?.src && (
+          <div class="content-block">
+            <h4>Imagen de apoyo</h4>
+            <img
+              src={item.image.src}
+              alt={item.image.alt ?? `Ejemplo de ${item.title}`}
+              class="exercise-image"
+            />
+            {item.image.caption && (
+              <p class="image-caption">{item.image.caption}</p>
+            )}
+          </div>
+        )}
+
+        {item.youtube?.embed && (
+          <div class="content-block">
+            <h4>Mini tutorial</h4>
+
+            <div class="video-wrap">
+              <iframe
+                src={item.youtube.embed}
+                title={`Video de ${item.title}`}
+                loading="lazy"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowfullscreen
+              ></iframe>
+            </div>
+          </div>
+        )}
+
+        {(item.youtube?.watch || item.supportMaterials?.length) && (
+          <div class="content-block action-row">
+            {item.youtube?.watch && (
+              <a
+                href={item.youtube.watch}
+                target="_blank"
+                rel="noopener noreferrer"
+                class="action-button"
+              >
+                Ver en YouTube
+              </a>
+            )}
+
+            {item.supportMaterials?.map((material) => (
+              <a
+                href={material.file}
+                class="action-button secondary"
+                download
+              >
+                {material.label}
+              </a>
+            ))}
+          </div>
+        )}
+      </div>
+    </details>
+  ))}
+</section>
+
+<style>
+  .accordion {
+    display: grid;
+    gap: 1rem;
+    margin-top: 1.5rem;
+  }
+
+  .accordion-item {
+    overflow: hidden;
+  }
+
+  .accordion-summary {
+    list-style: none;
+    cursor: pointer;
+    display: flex;
+    align-items: start;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .accordion-summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .summary-copy {
+    max-width: 66ch;
+  }
+
+  .duration {
+    margin: 0 0 0.3rem;
+    font-family: var(--font-accent);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.75rem;
+    color: #d9485f;
+    font-weight: 700;
+  }
+
+  .accordion-summary h3 {
+    margin: 0 0 0.35rem;
+    font-size: 1.35rem;
+    line-height: 1.06;
+  }
+
+  .summary-text {
+    margin: 0;
+    color: var(--ink-soft);
+    line-height: 1.68;
+  }
+
+  .toggle {
+    flex-shrink: 0;
+    width: 2rem;
+    height: 2rem;
+    display: grid;
+    place-items: center;
+    border: 1.5px solid rgba(17, 17, 17, 0.82);
+    border-radius: 3px;
+    background: rgba(255, 255, 255, 0.72);
+    font-weight: 700;
+    line-height: 1;
+    box-shadow: 3px 3px 0 #11111124;
+    transition: transform 140ms ease;
+  }
+
+  details[open] .toggle {
+    transform: rotate(45deg);
+  }
+
+  .accordion-body {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(17, 17, 17, 0.12);
+    display: grid;
+    gap: 1rem;
+  }
+
+  .content-block h4 {
+    margin: 0 0 0.5rem;
+    font-size: 1rem;
+  }
+
+  .content-block p,
+  .content-block li {
+    color: var(--ink-soft);
+    line-height: 1.72;
+  }
+
+  .content-block ul,
+  .content-block ol {
+    margin: 0;
+    padding-left: 1.2rem;
+  }
+
+  .exercise-image {
+    width: 100%;
+    max-width: 760px;
+    border-radius: 3px;
+    border: 1.5px solid rgba(17, 17, 17, 0.82);
+    box-shadow: 4px 4px 0 #11111124;
+    background: #fff;
+    display: block;
+  }
+
+  .image-caption {
+    margin-top: 0.55rem;
+    font-size: 0.94rem;
+    color: var(--ink-soft);
+  }
+
+  .video-wrap {
+    width: 100%;
+    max-width: 760px;
+    aspect-ratio: 16 / 9;
+    border: 1.5px solid rgba(17, 17, 17, 0.82);
+    border-radius: 3px;
+    overflow: hidden;
+    box-shadow: 4px 4px 0 #11111124;
+    background: #fff;
+  }
+
+  .video-wrap iframe {
+    width: 100%;
+    height: 100%;
+    border: 0;
+    display: block;
+  }
+
+  .action-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  .action-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.82rem 1rem;
+    border: 1.5px solid rgba(17, 17, 17, 0.82);
+    border-radius: 3px;
+    text-decoration: none;
+    font-weight: 700;
+    background: rgba(255, 255, 255, 0.74);
+    color: #111;
+    box-shadow: 4px 4px 0 #11111140;
+    transition: transform 140ms ease, box-shadow 140ms ease;
+  }
+
+  .action-button:hover {
+    transform: translateY(-1px);
+    box-shadow: 5px 5px 0 #11111133;
+  }
+
+  .action-button.secondary {
+    background: rgba(255, 252, 246, 0.88);
+  }
+
+  @media (max-width: 720px) {
+    .accordion-summary {
+      gap: 0.85rem;
+    }
+
+    .accordion-summary h3 {
+      font-size: 1.22rem;
+    }
+
+    .toggle {
+      width: 1.85rem;
+      height: 1.85rem;
+    }
+  }
+</style>

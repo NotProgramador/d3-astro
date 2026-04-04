@@ -11,7 +11,7 @@ import HomeExplore from "../components/HomeExplore.astro";
   <HomeInfoBlocks />
 
   <section class="follow-section">
-    <div class="follow-card">
+    <div class="follow-card paper-card">
       <p class="eyebrow">próximas sesiones</p>
       <h2>La actividad viva sucede en Instagram</h2>
       <p>
@@ -46,18 +46,12 @@ import HomeExplore from "../components/HomeExplore.astro";
   }
 
   .follow-card {
-  background: rgba(255, 255, 255, 0.74);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-  border: 2px solid #111;
-  border-radius: 28px;
-  padding: 1.5rem;
-  box-shadow: 4px 4px 0 #111;
-  max-width: 860px;
-}
+    max-width: 860px;
+  }
 
   .eyebrow {
     margin: 0 0 0.45rem;
+    font-family: var(--font-accent);
     text-transform: uppercase;
     letter-spacing: 0.08em;
     font-size: 0.78rem;
@@ -69,40 +63,70 @@ import HomeExplore from "../components/HomeExplore.astro";
     margin: 0 0 0.8rem;
     font-size: clamp(1.8rem, 4vw, 2.8rem);
     line-height: 0.98;
+    max-width: 13ch;
   }
 
   .follow-card p {
     margin: 0 0 1rem;
     line-height: 1.8;
     max-width: 62ch;
+    color: var(--ink-soft);
   }
 
   .btn-follow {
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     padding: 0.9rem 1.1rem;
-    border: 2px solid #111;
-    border-radius: 999px;
+    border: 1.5px solid rgba(17, 17, 17, 0.82);
+    border-radius: 3px;
     text-decoration: none;
     font-weight: 700;
     color: #111;
-    background: white;
-    box-shadow: 3px 3px 0 #111;
+    background: rgba(255, 255, 255, 0.74);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    box-shadow: 4px 4px 0 #11111140;
+    transition: transform 140ms ease, box-shadow 140ms ease;
+  }
+
+  .btn-follow:hover {
+    transform: translateY(-1px);
+    box-shadow: 5px 5px 0 #11111133;
   }
 
   .closing {
     margin: 3rem 0 1rem;
-    padding: 1rem 0 2rem;
+    padding: 0.75rem 0 2rem;
   }
 
   .closing p {
     margin: 0 0 0.75rem;
-    font-size: 1.1rem;
-    line-height: 1.7;
+    font-size: 1.05rem;
+    line-height: 1.72;
+    color: var(--ink-soft);
+    max-width: 40ch;
   }
 
   .closing-link {
     font-weight: 700;
     color: #111;
     text-decoration: none;
+    border-bottom: 1px solid rgba(17, 17, 17, 0.28);
+    padding-bottom: 0.08rem;
+  }
+
+  .closing-link:hover {
+    border-bottom-color: rgba(17, 17, 17, 0.65);
+  }
+
+  @media (max-width: 900px) {
+    .follow-section {
+      margin: 1.5rem 0 2.5rem;
+    }
+
+    .follow-card h2 {
+      max-width: none;
+    }
   }
 </style>

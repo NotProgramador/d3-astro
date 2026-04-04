@@ -34,6 +34,7 @@ import places from "../data/places.json";
 
   .eyebrow {
     margin: 0 0 0.5rem;
+    font-family: var(--font-accent);
     text-transform: uppercase;
     letter-spacing: 0.08em;
     font-size: 0.8rem;
@@ -43,15 +44,17 @@ import places from "../data/places.json";
 
   h1 {
     margin: 0 0 1rem;
-    font-size: clamp(2.4rem, 6vw, 4.5rem);
+    font-size: clamp(2.5rem, 6vw, 4.6rem);
     line-height: 0.95;
+    max-width: 8ch;
   }
 
   .intro {
     margin: 0;
     font-size: 1.05rem;
-    line-height: 1.7;
+    line-height: 1.72;
     max-width: 60ch;
+    color: var(--ink-soft);
   }
 
   .map-section {
@@ -61,5 +64,6 @@ import places from "../data/places.json";
   .places-list {
     display: grid;
     gap: 1.5rem;
+    margin-bottom: 1rem;
   }
 </style>

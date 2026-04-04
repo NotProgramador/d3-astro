@@ -1,162 +1,76 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
-import ExerciseCard from "../components/ExerciseCard.astro";
-import exercises from "../data/exercises.json";
-
-const tips = [
-  "Dibuja para entender, no para demostrar.",
-  "Observa más de lo que corriges.",
-  "No todo trazo necesita ser bonito para ser valioso.",
-  "El error también forma parte de la mirada.",
-  "A veces mirar distinto ya es dibujar distinto.",
-  "Suelta la mano antes de pedirle precisión."
-];
+import PrimerosTrazosAccordion from "../components/PrimerosTrazosAccordion.astro";
+import { orderedExercises } from "../data/exercises";
 ---
 
 <BaseLayout title="Primeros trazos | D³">
   <section class="page-hero">
     <p class="eyebrow">primeros trazos</p>
-    <h1>Ejercicios para mirar distinto</h1>
+    <h1>Ejercicios para empezar sin pelearte con la hoja</h1>
     <p class="intro">
-      Una pequeña colección de ejercicios y notas para soltar la mano, observar
-      sin juicio y acercarse al dibujo como presencia, exploración y práctica.
+      Esta sección reúne prácticas para soltar la mano, observar mejor, entender
+      proporciones y ganar confianza. No hace falta hacerlas en orden ni
+      terminarlas perfecto. Lo importante es volver a ellas y repetir.
     </p>
   </section>
 
-  <section class="exercise-grid">
-    {exercises.map((exercise) => (
-      <ExerciseCard exercise={exercise} />
-    ))}
-  </section>
-
-  <section class="tips-section">
-    <div class="tips-card">
-      <p class="eyebrow">notas</p>
-      <h2>Tips para empezar</h2>
-
-      <ul>
-        {tips.map((tip) => (
-          <li>{tip}</li>
-        ))}
-      </ul>
-    </div>
-  </section>
-
-  <section class="closing">
+  <section class="intro-card paper-card">
+    <h2>Cómo usar esta sección</h2>
     <p>
-      Estos ejercicios no buscan perfección: buscan abrir espacio para mirar,
-      probar y habitar el trazo con más libertad.
+      Puedes usar estos ejercicios como calentamiento, práctica semanal o apoyo
+      cuando sientas bloqueo. Algunos incluyen video y otros pueden llevar
+      plantillas o guías descargables para acompañar la práctica.
     </p>
-
-    <div class="actions">
-      <a href="/mapa-d3" class="btn-primary">Explorar Mapa D³</a>
-      <a
-        href="https://instagram.com/"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="btn-secondary"
-      >
-        Ver Instagram
-      </a>
-    </div>
   </section>
+
+  <PrimerosTrazosAccordion items={orderedExercises} />
 </BaseLayout>
 
 <style>
   .page-hero {
-    max-width: 760px;
-    margin: 1rem 0 2rem;
+    max-width: 780px;
+    margin-bottom: 1.5rem;
   }
 
   .eyebrow {
-    margin: 0 0 0.45rem;
+    margin: 0 0 0.5rem;
+    font-family: var(--font-accent);
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    font-size: 0.78rem;
-    font-weight: 700;
+    font-size: 0.8rem;
     color: #d9485f;
+    font-weight: 700;
   }
 
   h1 {
     margin: 0 0 1rem;
-    font-size: clamp(2.4rem, 6vw, 4.5rem);
+    font-size: clamp(2.3rem, 6vw, 4.6rem);
     line-height: 0.95;
-    max-width: 10ch;
+    max-width: 11ch;
   }
 
   .intro {
     margin: 0;
-    max-width: 62ch;
-    line-height: 1.8;
+    max-width: 60ch;
+    color: var(--ink-soft);
+    line-height: 1.72;
     font-size: 1.05rem;
   }
 
-  .exercise-grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 1.2rem;
-    margin-bottom: 2.5rem;
+  .intro-card {
+    max-width: 900px;
+    margin-bottom: 1.5rem;
   }
 
-  .tips-section {
-    margin-bottom: 2.5rem;
+  .intro-card h2 {
+    margin-bottom: 0.7rem;
   }
 
-  .tips-card {
-    background: rgba(255, 255, 255, 0.74);
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
-    border: 2px solid #111;
-    border-radius: 28px;
-    padding: 1.4rem;
-    box-shadow: 4px 4px 0 #111;
-    max-width: 860px;
-  }
-
-  .tips-card h2 {
-    margin: 0 0 1rem;
-    font-size: 2rem;
-  }
-
-  .tips-card ul {
+  .intro-card p {
     margin: 0;
-    padding-left: 1.2rem;
-    line-height: 1.9;
-  }
-
-  .closing {
-    padding-bottom: 2rem;
-    max-width: 780px;
-  }
-
-  .closing p {
-    line-height: 1.8;
-    font-size: 1.05rem;
-  }
-
-  .actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.8rem;
-    margin-top: 1rem;
-  }
-
-  .btn-primary,
-  .btn-secondary {
-    display: inline-block;
-    padding: 0.9rem 1.1rem;
-    border: 2px solid #111;
-    border-radius: 999px;
-    text-decoration: none;
-    font-weight: 700;
-    background: rgba(255,255,255,0.92);
-    color: #111;
-    box-shadow: 3px 3px 0 #111;
-  }
-
-  @media (max-width: 900px) {
-    .exercise-grid {
-      grid-template-columns: 1fr;
-    }
+    color: var(--ink-soft);
+    line-height: 1.72;
+    max-width: 64ch;
   }
 </style>
