@@ -10,7 +10,6 @@
 
   --card-bg: rgba(255, 255, 255, 0.74);
   --card-border: rgba(17, 17, 17, 0.82);
-  --card-line-soft: rgba(17, 17, 17, 0.10);
 
   --card-radius: 3px;
   --card-pad: 1.25rem;
@@ -20,6 +19,9 @@
   --font-body: "Avenir Next", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
   --font-display: "Georgia", "Times New Roman", serif;
   --font-accent: "Trebuchet MS", "Segoe UI", sans-serif;
+
+  --header-height-desktop: 78px;
+  --header-height-mobile: 132px;
 }
 
 * {
@@ -33,6 +35,7 @@ html {
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  scroll-padding-top: calc(var(--header-height-desktop) + 16px);
 }
 
 body {
@@ -76,6 +79,7 @@ h6 {
   line-height: 1.12;
   letter-spacing: 0.01em;
   color: var(--ink);
+  text-wrap: balance;
 }
 
 h1 {
@@ -116,7 +120,12 @@ select {
   border-radius: 999px;
 }
 
-/* base común para cards y bloques translúcidos */
+.page-content {
+  padding-top: 1.25rem;
+  padding-bottom: 2.5rem;
+  min-width: 0;
+}
+
 .paper-card {
   position: relative;
   background: var(--card-bg);
@@ -127,7 +136,6 @@ select {
   padding: var(--card-pad);
   box-shadow: var(--shadow-float);
 }
-
 
 .sketch-label {
   display: inline-block;
@@ -143,14 +151,77 @@ select {
   color: var(--ink-soft);
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1100px) {
   .page-shell {
-    width: min(var(--page-max), calc(100% - 24px));
-    padding-left: 56px;
-    padding-right: 12px;
+    width: min(var(--page-max), calc(100% - 32px));
+    padding-right: 18px;
+  }
+}
+
+@media (max-width: 900px) {
+  html {
+    scroll-padding-top: calc(var(--header-height-mobile) + 12px);
+  }
+
+  .page-shell {
+    width: min(var(--page-max), calc(100% - 20px));
+    padding-left: 48px;
+    padding-right: 6px;
   }
 
   .page-shell::before {
-    left: 28px;
+    left: 22px;
+    width: 2px;
+  }
+
+  .page-content {
+    padding-top: 1rem;
+    padding-bottom: 2rem;
+  }
+
+  .paper-card {
+    padding: 1rem;
+  }
+
+  h1 {
+    font-size: clamp(2rem, 8vw, 3rem);
+  }
+
+  h2 {
+    font-size: clamp(1.45rem, 6vw, 2.15rem);
+  }
+
+  h3 {
+    font-size: clamp(1.08rem, 4.8vw, 1.3rem);
+  }
+
+  p,
+  li {
+    line-height: 1.7;
+  }
+}
+
+@media (max-width: 560px) {
+  body {
+    background-size: 520px auto;
+  }
+
+  .page-shell {
+    width: calc(100% - 16px);
+    padding-left: 42px;
+    padding-right: 2px;
+  }
+
+  .page-shell::before {
+    left: 18px;
+  }
+
+  .page-content {
+    padding-top: 0.85rem;
+    padding-bottom: 1.75rem;
+  }
+
+  .paper-card {
+    padding: 0.95rem;
   }
 }
