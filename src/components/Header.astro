@@ -16,6 +16,11 @@ const isActive = (href: string) => {
 
 const currentItem =
   navItems.find((item) => isActive(item.href)) ?? navItems[0];
+
+const mobileMenuLabel =
+  currentItem.label.length > 7
+    ? `${currentItem.label.slice(0, 7)}…`
+    : currentItem.label;
 ---
 
 <header class="site-header">
@@ -38,7 +43,7 @@ const currentItem =
 
     <details class="mobile-menu">
       <summary class="mobile-menu-toggle">
-        <span class="mobile-menu-label">Menú - {currentItem.label}</span>
+        <span class="mobile-menu-label">Menú - {mobileMenuLabel}</span>
       </summary>
 
       <nav class="mobile-panel" aria-label="Navegación móvil">
@@ -214,28 +219,33 @@ const currentItem =
     }
 
     .mobile-menu-toggle {
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 40px;
-      padding: 0.58rem 0.8rem;
-      border: 1.5px solid rgba(17, 17, 17, 0.82);
-      border-radius: 3px;
-      background: rgba(255, 255, 255, 0.72);
-      box-shadow: 4px 4px 0 #11111132;
-      color: #111;
-      user-select: none;
-    }
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  width: 150px;
+  padding: 0.58rem 0.8rem;
+  border: 1.5px solid rgba(17, 17, 17, 0.82);
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: 4px 4px 0 #11111132;
+  color: #111;
+  user-select: none;
+}
 
     .mobile-menu-label {
-      font-family: var(--font-accent);
-      font-size: 0.9rem;
-      font-weight: 700;
-      letter-spacing: 0.02em;
-      line-height: 1;
-      white-space: nowrap;
-    }
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: var(--font-accent);
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  white-space: nowrap;
+}
 
     .mobile-panel {
       position: absolute;
