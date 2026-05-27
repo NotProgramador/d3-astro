@@ -45,7 +45,7 @@ const mobileMenuLabel =
 
       <nav class="mobile-panel" aria-label="Navegación móvil">
         {navItems.map((item) => (
-          <a href={item.href} class={`nav-link ${isActive(item.href) ? "is-active" : ""}`}>
+          <a href={item.href} class={`mobile-link ${isActive(item.href) ? "is-active" : ""}`}>
   <span>{item.label}</span>
 </a>
         ))}

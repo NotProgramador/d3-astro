@@ -1,12 +1,235 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+
+const featured = ['09', '08', '07', '06', '05', '04'];
+const archive  = ['01', '02', '03', '04', '05', '06', '07', '08', '09'];
 ---
 
-<BaseLayout title="tinta — D³">
-  <div class="container">
-    <section class="section">
-      <h1 class="page-title">tinta</h1>
-      <p class="page-intro">Esta página es un placeholder inicial para empezar a construir la versión real del sitio.</p>
-    </section>
-  </div>
+<BaseLayout title="Tinta — D³">
+  <section class="tinta-hero">
+    <p class="eyebrow">tinta · dibujo · narrativa</p>
+    <h1>Tinta</h1>
+    <p class="hero-phrase">"me amaneció nublado"</p>
+    <p class="intro">
+      Mini tiras, dibujos sueltos y un universo narrativo sensible que vive
+      dentro de D³. Tinta es el espacio donde el trazo cuenta historias.
+    </p>
+  </section>
+
+  <section class="gallery-section">
+    <div class="gallery-grid">
+      {featured.map((num) => (
+        <div class="gallery-item paper-card">
+          <img
+            src={`/images/tinta/${num}.webp`}
+            alt={`Tinta ${num}`}
+            loading="lazy"
+          />
+        </div>
+      ))}
+    </div>
+  </section>
+
+  <section class="instagram-section">
+    <div class="instagram-card paper-card">
+      <p class="eyebrow">tinta vive también en instagram</p>
+      <h2>Más tinta, más trazos</h2>
+      <p>
+        Las publicaciones más recientes, historias y el día a día del proyecto
+        se comparten en Instagram. Ahí es donde Tinta respira en tiempo real.
+      </p>
+      <a
+        href="https://www.instagram.com/domingosdedibujar/"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="btn-instagram"
+      >
+        Ver más en Instagram
+      </a>
+    </div>
+  </section>
+
+  <section class="archive-section">
+    <p class="eyebrow">archivo local</p>
+    <h2>Todas las tintas</h2>
+    <div class="archive-grid">
+      {archive.map((num) => (
+        <div class="archive-item">
+          <img
+            src={`/images/tinta/${num}.webp`}
+            alt={`Tinta ${num}`}
+            loading="lazy"
+          />
+        </div>
+      ))}
+    </div>
+  </section>
 </BaseLayout>
+
+<style>
+  .tinta-hero {
+    max-width: 780px;
+    margin-bottom: 2rem;
+  }
+
+  .eyebrow {
+    margin: 0 0 0.5rem;
+    font-family: var(--font-accent);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #d9485f;
+  }
+
+  .tinta-hero h1 {
+    margin: 0 0 0.8rem;
+    font-size: clamp(2.8rem, 7vw, 5.2rem);
+    line-height: 0.95;
+  }
+
+  .hero-phrase {
+    font-family: var(--font-display);
+    font-size: clamp(1.15rem, 3vw, 1.55rem);
+    font-style: italic;
+    color: var(--ink-soft);
+    margin: 0 0 1rem;
+    line-height: 1.4;
+  }
+
+  .intro {
+    margin: 0;
+    max-width: 52ch;
+    color: var(--ink-soft);
+    line-height: 1.72;
+    font-size: 1.02rem;
+  }
+
+  /* --- Featured gallery --- */
+  .gallery-section {
+    margin-bottom: 2.5rem;
+  }
+
+  .gallery-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+  }
+
+  .gallery-item {
+    overflow: hidden;
+    padding: 0;
+  }
+
+  .gallery-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    border-radius: var(--card-radius);
+  }
+
+  /* --- Instagram CTA --- */
+  .instagram-section {
+    margin-bottom: 2.5rem;
+  }
+
+  .instagram-card {
+    max-width: 860px;
+  }
+
+  .instagram-card h2 {
+    margin: 0 0 0.8rem;
+    font-size: clamp(1.65rem, 4vw, 2.5rem);
+    line-height: 0.98;
+    max-width: 13ch;
+  }
+
+  .instagram-card p {
+    margin: 0 0 1rem;
+    line-height: 1.72;
+    max-width: 55ch;
+    color: var(--ink-soft);
+  }
+
+  .btn-instagram {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.9rem 1.1rem;
+    border: 1.5px solid rgba(17, 17, 17, 0.82);
+    border-radius: 3px;
+    text-decoration: none;
+    font-weight: 700;
+    color: #111;
+    background: rgba(255, 255, 255, 0.74);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    box-shadow: 4px 4px 0 #11111140;
+    transition: transform 140ms ease, box-shadow 140ms ease;
+  }
+
+  .btn-instagram:hover {
+    transform: translateY(-1px);
+    box-shadow: 5px 5px 0 #11111133;
+  }
+
+  /* --- Archive grid --- */
+  .archive-section {
+    margin-bottom: 2rem;
+  }
+
+  .archive-section h2 {
+    margin: 0 0 1rem;
+  }
+
+  .archive-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.75rem;
+  }
+
+  .archive-item {
+    overflow: hidden;
+    border-radius: var(--card-radius);
+    border: 1px solid rgba(17, 17, 17, 0.12);
+    box-shadow: 2px 2px 0 #11111118;
+  }
+
+  .archive-item img {
+    width: 100%;
+    display: block;
+    transition: transform 0.25s ease;
+  }
+
+  .archive-item:hover img {
+    transform: scale(1.03);
+  }
+
+  @media (max-width: 900px) {
+    .gallery-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .archive-grid {
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.5rem;
+    }
+
+    .instagram-card h2 {
+      max-width: none;
+    }
+  }
+
+  @media (max-width: 560px) {
+    .gallery-grid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.65rem;
+    }
+
+    .archive-grid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.45rem;
+    }
+  }
+</style>

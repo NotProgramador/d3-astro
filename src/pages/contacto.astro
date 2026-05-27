@@ -58,19 +58,17 @@ import BaseLayout from "../layouts/BaseLayout.astro";
       <h2>Apoyo / donar</h2>
       <p>
         Si quieres impulsar el proyecto y ayudar a que existan más sesiones,
-        materiales, archivo y próximas actividades, este espacio también servirá
-        para reunir formas de apoyo.
+        materiales, archivo y próximas actividades, tu apoyo hace la diferencia. (Da click e ingresa la cantidad que desees donar, muchas gracias)
       </p>
 
-      <ul>
-        <li>Apoyo económico para próximas actividades</li>
-        <li>Materiales para sesiones y talleres</li>
-        <li>Impulso para producción visual y archivo del proyecto</li>
-      </ul>
-
-      <p class="support-note">
-        Próximamente aquí puede aparecer una forma directa de donar o apoyar.
-      </p>
+      <a
+        href="https://link.mercadopago.com.mx/ohaagency"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="btn-donate"
+      >
+        Apoyar con donativo
+      </a>
     </article>
   </section>
 </BaseLayout>
@@ -107,12 +105,12 @@ import BaseLayout from "../layouts/BaseLayout.astro";
   }
 
   .contact-grid {
-  display: grid;
-  gap: 1.2rem;
-  grid-template-columns: 1fr;
-  margin-bottom: 2rem;
-  max-width: 920px;
-}
+    display: grid;
+    gap: 1.2rem;
+    grid-template-columns: 1fr;
+    margin-bottom: 2rem;
+    max-width: 920px;
+  }
 
   .contact-card {
     position: relative;
@@ -135,19 +133,72 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     padding-left: 1.1rem;
   }
 
-  .contact-card a {
+  .contact-card a:not(.btn-donate) {
     color: inherit;
     text-decoration: none;
     border-bottom: 1px solid rgba(17, 17, 17, 0.24);
   }
 
-  .contact-card a:hover {
+  .contact-card a:not(.btn-donate):hover {
     border-bottom-color: rgba(17, 17, 17, 0.55);
   }
 
-  .support-note {
-    margin-top: 1rem;
+  .btn-donate {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 1.1rem;
+    padding: 0.9rem 1.35rem;
+    border: 1.5px solid rgba(17, 17, 17, 0.82);
+    border-radius: 3px;
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 1.02rem;
+    color: #111;
+    background: rgba(255, 255, 255, 0.74);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    box-shadow: 4px 4px 0 #11111140;
+    transition: transform 140ms ease, box-shadow 140ms ease;
+  }
+
+  .btn-donate:hover {
+    transform: translateY(-1px);
+    box-shadow: 5px 5px 0 #11111133;
+  }
+
+  .transfer-block {
+    margin-top: 1.4rem;
+    padding-top: 1.1rem;
+    border-top: 1px dashed rgba(17, 17, 17, 0.18);
+  }
+
+  .transfer-title {
+    font-weight: 600;
+    color: var(--ink) !important;
+    margin-bottom: 0.5rem;
+    font-size: 0.95rem;
+  }
+
+  .transfer-data {
+    background: rgba(255, 255, 255, 0.5);
+    border: 1px solid rgba(17, 17, 17, 0.1);
+    border-radius: 3px;
+    padding: 0.75rem 0.9rem;
+  }
+
+  .transfer-data p {
+    margin: 0 0 0.3rem;
+    font-size: 0.92rem;
+  }
+
+  .transfer-data p:last-child {
+    margin-bottom: 0;
+  }
+
+  .placeholder {
     font-style: italic;
+    opacity: 0.55;
   }
 
   @media (max-width: 900px) {
