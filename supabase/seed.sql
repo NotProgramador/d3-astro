@@ -97,11 +97,14 @@ begin
   on conflict (id) do nothing;
 
   -- ------------------------------------------------------------
-  -- Recompensas placeholder por familia
+  -- Recompensas del piloto
   -- ------------------------------------------------------------
-  insert into public.rewards (family_id, name, description, reward_type, is_active) values
-    ('FAMILY-A', 'Mini print de Tinta con lápiz', 'Recompensa provisional al completar la familia A.', 'print', false),
-    ('FAMILY-B', 'Paquete digital de referencias', 'Recompensa provisional al completar la familia B.', 'digital', false),
-    ('FAMILY-C', 'Paquete de stickers de Tinta', 'Recompensa provisional al completar la familia C.', 'stickers', false);
+  -- FAMILY-A queda ACTIVA con reward_type='physical_claim' y stock=10;
+  -- es la única que participa en el cierre de loop de este piloto.
+  -- FAMILY-B y FAMILY-C quedan como placeholder inactivo.
+  insert into public.rewards (family_id, name, description, reward_type, stock, is_active) values
+    ('FAMILY-A', 'Mini print de Tinta con lápiz', 'Recompensa provisional al completar la familia A.', 'physical_claim', 10, true),
+    ('FAMILY-B', 'Paquete digital de referencias', 'Recompensa provisional al completar la familia B.', 'digital', null, false),
+    ('FAMILY-C', 'Paquete de stickers de Tinta', 'Recompensa provisional al completar la familia C.', 'stickers', null, false);
 end;
 $$;

@@ -1,0 +1,119 @@
+---
+/**
+ * NodeTips.astro
+ *
+ * FAMILY-B: tres tips + mini viñeta de tres paneles + ejercicio.
+ * Los [data-slot] los rellena el JS de /nodo desde content.tips / vignette / exercise.
+ */
+---
+
+<div class="node-tips" data-tm-block="tips" hidden>
+  <ol class="tips-list" data-slot="tips">
+    <li>Empieza por la forma grande.</li>
+    <li>Dibuja la dirección antes del contorno.</li>
+    <li>Compara espacios vacíos.</li>
+  </ol>
+
+  <section class="vignette">
+    <p class="eyebrow">mini viñeta</p>
+    <div class="panels">
+      <div class="panel">
+        <span class="panel-num" aria-hidden="true">1</span>
+        <p class="panel-label">Tinta mira</p>
+      </div>
+      <div class="panel">
+        <span class="panel-num" aria-hidden="true">2</span>
+        <p class="panel-label">Tinta duda</p>
+      </div>
+      <div class="panel">
+        <span class="panel-num" aria-hidden="true">3</span>
+        <p class="panel-label">Tinta dibuja igual</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="exercise" data-slot="exercise-wrap">
+    <p class="ex-label">Ejercicio</p>
+    <p data-slot="exercise">Dibuja tu mano sin mirarla, sólo sintiendo el trazo.</p>
+  </section>
+</div>
+
+<style>
+  .node-tips { display: grid; gap: 1.1rem; }
+  .tips-list {
+    margin: 0.2rem 0 0.4rem 1.1rem;
+    line-height: 1.75;
+    color: var(--ink);
+  }
+  .tips-list li { margin-bottom: 0.15rem; }
+
+  .eyebrow {
+    margin: 0 0 0.5rem;
+    font-family: var(--font-accent);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.72rem;
+    color: var(--accent);
+    font-weight: 700;
+  }
+  .vignette { display: block; }
+  .panels {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.6rem;
+  }
+  .panel {
+    aspect-ratio: 3 / 4;
+    background: rgba(255,255,255,0.7);
+    border: 1.5px solid rgba(17,17,17,0.55);
+    border-radius: 3px;
+    padding: 0.55rem 0.5rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    box-shadow: 3px 3px 0 rgba(17,17,17,0.12);
+  }
+  .panel:nth-child(1) { transform: rotate(-1.3deg); }
+  .panel:nth-child(2) { transform: rotate(0.6deg); }
+  .panel:nth-child(3) { transform: rotate(-0.4deg); }
+  .panel-num {
+    display: inline-block;
+    font-family: var(--font-accent);
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    color: var(--ink-soft);
+  }
+  .panel-label {
+    margin: 0;
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: 0.95rem;
+    line-height: 1.25;
+  }
+
+  .exercise {
+    padding: 0.75rem 0.9rem;
+    background: rgba(217,72,95,0.08);
+    border-left: 3px solid var(--accent);
+  }
+  .ex-label {
+    margin: 0 0 0.25rem;
+    font-family: var(--font-accent);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.72rem;
+    color: var(--accent);
+    font-weight: 700;
+  }
+  .exercise p:last-child { margin: 0; }
+
+  @media (max-width: 480px) {
+    .panels { grid-template-columns: 1fr 1fr 1fr; gap: 0.4rem; }
+    .panel { padding: 0.45rem 0.4rem; }
+    .panel-label { font-size: 0.85rem; }
+  }
+  @media (max-width: 360px) {
+    .panels { grid-template-columns: 1fr; }
+    .panel { aspect-ratio: auto; }
+  }
+</style>

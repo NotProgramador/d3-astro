@@ -1,0 +1,119 @@
+---
+/**
+ * RecoveryEmailStatus.astro
+ *
+ * Bloque compacto que refleja el estado normalizado del correo de
+ * recuperación del explorador. El backend es la fuente de verdad;
+ * el script cliente que envuelve este componente escribe
+ * `data-state="none|pending|verified"` en el elemento raíz y
+ * rellena `[data-slot="masked_email"]` con el correo enmascarado.
+ *
+ * Reglas visuales:
+ *   NONE     → "Agrega un correo de recuperación" + formulario expandido.
+ *   PENDING  → bloque compacto colapsado + reenvío (si SMTP existe).
+ *   VERIFIED → bloque compacto colapsado + "Cambiar correo" en <details>.
+ */
+---
+
+<section class="rec-status" data-state="none" data-slot="root">
+  <!-- Estado NONE — visitante que aún no ha agregado correo -->
+  <div class="rec-none" data-slot="pane-none">
+    <p class="eyebrow">correo opcional</p>
+    <h2>Agrega un correo de recuperación</h2>
+    <p class="hint">
+      Tu correo sólo se usará para ayudarte a recuperar tu credencial.
+      No recibirás publicidad ni mensajes sin autorización.
+    </p>
+    <slot name="add-form" />
+  </div>
+
+  <!-- Estado PENDING — correo guardado pero no confirmado -->
+  <div class="rec-pending" data-slot="pane-pending" hidden>
+    <p class="eyebrow">pendiente de confirmar</p>
+    <h3>Correo de recuperación pendiente</h3>
+    <p class="masked" data-slot="masked_email">—</p>
+    <div class="actions">
+      <button type="button" class="btn-line" data-action="resend" data-slot="resend-btn">
+        Reenviar confirmación
+      </button>
+      <details class="change">
+        <summary>Cambiar correo</summary>
+        <slot name="change-form" />
+      </details>
+    </div>
+  </div>
+
+  <!-- Estado VERIFIED — correo confirmado -->
+  <div class="rec-verified" data-slot="pane-verified" hidden>
+    <p class="eyebrow">recuperación configurada</p>
+    <p class="line">Tu credencial está vinculada a <span class="masked" data-slot="masked_email">—</span></p>
+    <details class="change">
+      <summary>Cambiar correo</summary>
+      <slot name="change-form" />
+    </details>
+  </div>
+</section>
+
+<style>
+  .rec-status {
+    display: block;
+    padding: 1rem 1.1rem;
+    background: var(--card-bg);
+    border: 1.5px solid var(--card-border);
+    border-radius: var(--card-radius);
+    box-shadow: var(--shadow-float);
+    max-width: 560px;
+    margin-top: 1rem;
+  }
+  .eyebrow {
+    margin: 0 0 0.35rem;
+    font-family: var(--font-accent);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--accent);
+  }
+  .rec-status h2, .rec-status h3 {
+    margin: 0 0 0.45rem;
+    font-size: 1.15rem;
+    line-height: 1.2;
+  }
+  .hint { color: var(--ink-soft); font-size: 0.92rem; margin: 0 0 0.6rem; }
+  .masked {
+    font-family: var(--font-display);
+    font-style: italic;
+    color: var(--ink);
+    font-size: 1rem;
+    display: inline-block;
+    margin: 0.1rem 0 0.6rem;
+  }
+  .line { margin: 0; color: var(--ink); font-size: 0.98rem; }
+  .actions { display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap; margin-top: 0.5rem; }
+  .btn-line {
+    display: inline-flex;
+    padding: 0.45rem 0.8rem;
+    border: 1.5px solid var(--ink);
+    border-radius: 3px;
+    background: rgba(255,255,255,0.7);
+    cursor: pointer;
+    font-family: var(--font-accent);
+    font-size: 0.78rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .change {
+    margin-top: 0.5rem;
+    border-top: 1px dashed rgba(17,17,17,0.15);
+    padding-top: 0.55rem;
+  }
+  .change summary {
+    cursor: pointer;
+    font-family: var(--font-accent);
+    font-size: 0.78rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+  .change[open] summary { color: var(--ink); }
+</style>

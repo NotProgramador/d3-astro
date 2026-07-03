@@ -64,6 +64,15 @@ export function createExplorer(): Promise<any> {
   return callFn('create-explorer', { device_token: getOrCreateDeviceToken() });
 }
 
+/**
+ * Peek: sólo devuelve estado existente. Nunca crea perfil. Úsalo en la
+ * carga de /credencial para hidratar el estado desde backend (fuente de
+ * verdad) sin efectos colaterales.
+ */
+export function probeExplorer(): Promise<any> {
+  return callFn('create-explorer', { device_token: getOrCreateDeviceToken(), probe: true });
+}
+
 export function recoverByCode(recoveryCode: string): Promise<any> {
   return callFn('recover-by-code', {
     recovery_code: recoveryCode,
@@ -74,11 +83,13 @@ export function recoverByCode(recoveryCode: string): Promise<any> {
 export function attachRecoveryEmail(
   email: string,
   prefs: { clue_emails?: boolean; event_emails?: boolean; project_news?: boolean } = {},
+  opts: { confirm_replace?: boolean } = {},
 ): Promise<any> {
   return callFn('attach-recovery-email', {
     device_token: getOrCreateDeviceToken(),
     email,
     prefs,
+    confirm_replace: !!opts.confirm_replace,
   });
 }
 

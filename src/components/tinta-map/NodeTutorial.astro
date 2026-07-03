@@ -1,0 +1,58 @@
+---
+/**
+ * NodeTutorial.astro
+ *
+ * Bloque de tutorial (título + pasos numerados). Se muestra debajo del
+ * diálogo cuando la familia trae content.tutorial. Los [data-slot] los
+ * rellena el JS de /nodo con lo que devuelve el backend.
+ */
+---
+
+<details class="node-tutorial" data-tm-block="tutorial" hidden>
+  <summary>
+    <span class="eyebrow">tutorial</span>
+    <span class="ttl" data-slot="title">Dibujo de memoria en tres pasos</span>
+  </summary>
+  <ol class="steps" data-slot="steps">
+    <li>Observa durante 30 segundos.</li>
+    <li>Oculta el objeto.</li>
+    <li>Dibuja lo que permaneció en tu memoria.</li>
+  </ol>
+</details>
+
+<style>
+  .node-tutorial {
+    display: block;
+    margin-top: 1rem;
+    background: rgba(255,255,255,0.55);
+    border: 1px dashed rgba(17,17,17,0.28);
+    border-radius: 3px;
+    padding: 0.7rem 0.95rem;
+  }
+  .node-tutorial summary {
+    cursor: pointer;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: baseline;
+  }
+  .eyebrow {
+    font-family: var(--font-accent);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.72rem;
+    color: var(--accent);
+    font-weight: 700;
+  }
+  .ttl {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 1.02rem;
+  }
+  .steps {
+    margin: 0.7rem 0 0.2rem 1.25rem;
+    line-height: 1.7;
+    color: var(--ink);
+  }
+  .steps li { margin-bottom: 0.15rem; }
+</style>

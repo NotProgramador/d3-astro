@@ -1,11 +1,9 @@
 ---
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 import TintaMapHero from '../../../components/tinta-map/TintaMapHero.astro';
-import FamilyIndex from '../../../components/tinta-map/FamilyIndex.astro';
+import FamilyProgress from '../../../components/tinta-map/FamilyProgress.astro';
 import NfcInstructions from '../../../components/tinta-map/NfcInstructions.astro';
 
-// Fallback: 3 familias del piloto. El script cliente puede refrescar
-// esta lista desde Supabase si está configurado.
 const families = [
   { id: 'FAMILY-A', name: 'Tinta sostiene un lápiz',
     description: 'Pregunta breve, animación mínima y un pequeño tutorial de dibujo.',
@@ -22,26 +20,70 @@ const families = [
 <BaseLayout title="Tinta estuvo aquí — D³">
   <TintaMapHero />
 
+  <!-- Cómo funciona en tres pasos -->
+  <section class="tm-how paper-card">
+    <p class="eyebrow">cómo funciona</p>
+    <h2>En tres pasos, sin instalar nada</h2>
+    <ol class="how-steps">
+      <li>
+        <span class="step-num" aria-hidden="true">1</span>
+        <div>
+          <p class="step-title">Encuentra una intervención de Tinta</p>
+          <p class="step-body">Vive en lugares reales. Aparece en paredes, esquinas, ventanas.</p>
+        </div>
+      </li>
+      <li>
+        <span class="step-num" aria-hidden="true">2</span>
+        <div>
+          <p class="step-title">Acerca tu teléfono</p>
+          <p class="step-body">La etiqueta es NFC. Se abre solo un enlace del navegador. No hay app que instalar.</p>
+        </div>
+      </li>
+      <li>
+        <span class="step-num" aria-hidden="true">3</span>
+        <div>
+          <p class="step-title">Guarda tu credencial y sigue explorando</p>
+          <p class="step-body">Se crea sola en tu primer hallazgo. Con un código de recuperación puedes conservarla.</p>
+        </div>
+      </li>
+    </ol>
+  </section>
+
+  <!-- Acciones rápidas -->
   <section class="tm-actions-bar paper-card">
     <div class="actions-copy">
       <p class="eyebrow">acciones</p>
-      <h2>Ya encontraste algo, o quieres empezar</h2>
+      <h2>Empezar</h2>
+      <p class="hint" data-slot="explorer-hint">Cargando estado…</p>
     </div>
     <div class="actions-row">
       <button type="button" id="tm-found-node" class="btn-primary">
         Ya encontré un nodo
       </button>
-      <a href="/tinta/tintamap/recuperar" class="btn-line">
-        Recuperar mi credencial
-      </a>
       <a href="/tinta/tintamap/credencial" class="btn-line" id="tm-my-cred" hidden>
         Ver mi credencial
       </a>
+      <a href="/tinta/tintamap/recuperar" class="btn-line">
+        Recuperar credencial
+      </a>
     </div>
-    <p class="hint" data-slot="explorer-hint"></p>
   </section>
 
-  <FamilyIndex families={families} placementsPerFamily={3} />
+  <!-- Progreso por familia -->
+  <section class="tm-families">
+    <p class="eyebrow">apariciones</p>
+    <h2>Índice de familias</h2>
+    <p class="section-intro">
+      Cada familia agrupa tres apariciones. Cada nueva ubicación cuenta como
+      un descubrimiento independiente. Las apariciones bloqueadas se revelan
+      sólo al encontrarlas físicamente.
+    </p>
+    <div class="fam-grid">
+      {families.map((f) => (
+        <FamilyProgress family={f} placementsCount={3} />
+      ))}
+    </div>
+  </section>
 
   <NfcInstructions />
 
@@ -69,8 +111,8 @@ const families = [
     const prog = getCachedProgress();
     if (hint) {
       hint.textContent = pid
-        ? `Explorando como ${pid}${prog ? ` · ${prog.discovered_count} nodo${prog.discovered_count === 1 ? '' : 's'}` : ''}.`
-        : '';
+        ? `Explorando como ${pid}${prog ? ` · ${prog.discovered_count} ${prog.discovered_count === 1 ? 'aparición' : 'apariciones'}` : ''}.`
+        : 'Cargando tu credencial…';
     }
     if (myCred) myCred.hidden = false;
   } else if (hint) {
@@ -86,35 +128,81 @@ const families = [
       const u = new URL(t);
       const k = u.searchParams.get('k');
       if (k) token = k;
-    } catch { /* not a URL, use as-is */ }
+    } catch { /* not a URL */ }
     location.href = `/tinta/tintamap/nodo?k=${encodeURIComponent(token)}`;
   });
 </script>
 
 <style>
-  .tm-actions-bar {
-    display: grid;
-    gap: 0.9rem;
-    margin: 1.5rem 0 2rem;
+  /* --- Cómo funciona --- */
+  .tm-how {
+    margin: 1.4rem 0 1.8rem;
     max-width: 780px;
   }
   .eyebrow {
-    margin: 0 0 0.35rem;
+    margin: 0 0 0.5rem;
     font-family: var(--font-accent);
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    font-size: 0.75rem;
+    font-size: 0.78rem;
     font-weight: 700;
     color: var(--accent);
   }
-  .actions-copy h2 { margin: 0; font-size: 1.4rem; }
-  .actions-row {
-    display: flex;
-    gap: 0.6rem;
-    flex-wrap: wrap;
+  .tm-how h2 {
+    margin: 0 0 1rem;
+    font-size: clamp(1.5rem, 4vw, 2.1rem);
+    line-height: 1.05;
   }
-  .btn-primary,
-  .btn-line {
+  .how-steps {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 0.85rem;
+  }
+  .how-steps li {
+    display: grid;
+    grid-template-columns: 42px 1fr;
+    gap: 0.85rem;
+    align-items: start;
+  }
+  .step-num {
+    display: grid;
+    place-items: center;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    border: 1.5px solid var(--ink);
+    background: rgba(255,255,255,0.85);
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 1.15rem;
+    transform: rotate(-3deg);
+  }
+  .step-title {
+    margin: 0 0 0.15rem;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 1.05rem;
+    line-height: 1.3;
+  }
+  .step-body {
+    margin: 0;
+    color: var(--ink-soft);
+    line-height: 1.55;
+    font-size: 0.95rem;
+  }
+
+  /* --- Acciones --- */
+  .tm-actions-bar {
+    display: grid;
+    gap: 0.85rem;
+    max-width: 780px;
+    margin-bottom: 1.6rem;
+  }
+  .actions-copy h2 { margin: 0 0 0.3rem; font-size: 1.35rem; }
+  .actions-row { display: flex; gap: 0.55rem; flex-wrap: wrap; }
+  .btn-primary, .btn-line {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -127,16 +215,27 @@ const families = [
     font-family: var(--font-body);
     font-weight: 700;
     cursor: pointer;
-    box-shadow: 4px 4px 0 #11111140;
+    box-shadow: 4px 4px 0 #11111133;
     transition: transform 140ms ease, box-shadow 140ms ease;
   }
   .btn-line { background: rgba(255,255,255,0.55); font-weight: 600; }
   .btn-primary:hover, .btn-line:hover {
     transform: translateY(-1px);
-    box-shadow: 5px 5px 0 #11111133;
+    box-shadow: 5px 5px 0 #11111122;
   }
-  .hint { margin: 0; color: var(--ink-soft); font-size: 0.9rem; }
+  .hint { margin: 0.35rem 0 0; color: var(--ink-soft); font-size: 0.9rem; }
 
+  /* --- Familias --- */
+  .tm-families { margin: 2rem 0; }
+  .tm-families h2 { margin: 0 0 0.4rem; font-size: clamp(1.5rem, 4vw, 2rem); }
+  .section-intro { margin: 0 0 1.15rem; max-width: 62ch; color: var(--ink-soft); line-height: 1.6; }
+  .fam-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+  }
+
+  /* --- Editorial --- */
   .tm-editorial { max-width: 720px; margin-top: 2rem; }
   .editorial-phrase {
     font-family: var(--font-display);
@@ -150,5 +249,14 @@ const families = [
     color: var(--ink-soft);
     line-height: 1.7;
     max-width: 55ch;
+  }
+
+  @media (max-width: 900px) {
+    .fam-grid { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 480px) {
+    .how-steps li { grid-template-columns: 36px 1fr; gap: 0.7rem; }
+    .step-num { width: 36px; height: 36px; font-size: 1rem; }
+    .btn-primary, .btn-line { flex: 1 1 auto; }
   }
 </style>

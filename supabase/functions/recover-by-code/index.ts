@@ -6,6 +6,8 @@ import { handlePreflight, jsonResponse } from "../_shared/cors.ts";
 import { getPepper, pepperedHash } from "../_shared/hash.ts";
 import { supabaseAdmin } from "../_shared/db.ts";
 import { computeProgress } from "../_shared/progress.ts";
+import { maskEmail, computeRecoveryStatus } from "../_shared/mask.ts";
+import { getProfileClaims } from "../_shared/rewards.ts";
 
 const NEUTRAL_INVALID = {
   ok: false,
@@ -58,7 +60,7 @@ Deno.serve(async (req) => {
 
     const { data: profile } = await db
       .from("explorer_profiles")
-      .select("id, public_id, created_at")
+      .select("id, public_id, created_at, email, email_verified")
       .eq("recovery_code_hash", codeHash)
       .maybeSingle();
 
@@ -91,10 +93,25 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Traer preferencias (si el perfil las tiene). Nunca creamos filas aquí.
+    const { data: prefsRow } = await db
+      .from("email_preferences")
+      .select("recovery_emails, clue_emails, event_emails, project_news")
+      .eq("profile_id", profile.id)
+      .maybeSingle();
+
     return jsonResponse(req, {
       ok: true,
       profile: { public_id: profile.public_id, created_at: profile.created_at },
       progress: await computeProgress(db, profile.id),
+      has_recovery_email: !!profile.email,
+      masked_email: maskEmail(profile.email),
+      email_verified: !!profile.email_verified,
+      recovery_status: computeRecoveryStatus(profile.email, profile.email_verified),
+      preferences: prefsRow ?? null,
+      // Cierre de loop: las claims existentes del perfil se devuelven
+      // sin crear ni tocar reward_claims (idempotente al recuperar).
+      claims: await getProfileClaims(db, profile.id),
     });
   } catch (e) {
     console.error("recover-by-code error", e);

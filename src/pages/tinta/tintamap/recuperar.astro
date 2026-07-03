@@ -22,7 +22,7 @@ import RecoveryForm from '../../../components/tinta-map/RecoveryForm.astro';
 
 <script>
   import { recoverByCode, sendRecoveryEmail } from '../../../lib/tintamap-api.ts';
-  import { setStoredPublicId, setStoredCreatedAt, setCachedProgress } from '../../../lib/tintamap-storage.ts';
+  import { setStoredPublicId, setStoredCreatedAt, setCachedProgress, setCachedRecoveryState } from '../../../lib/tintamap-storage.ts';
 
   function setFeedback(target: string, msg: string, kind: 'error' | 'ok' | '' = '') {
     const el = document.querySelector<HTMLElement>(`[data-target="${target}"]`);
@@ -44,6 +44,16 @@ import RecoveryForm from '../../../components/tinta-map/RecoveryForm.astro';
         if (res.progress) setCachedProgress({
           discovered_count: res.progress.discovered_count,
           families: res.progress.families,
+        });
+        // Fuente de verdad del estado de recuperación: el backend recién consultado.
+        // Cacheamos para que /credencial no muestre el formulario "agregar correo"
+        // cuando el perfil recuperado ya tenía uno asociado.
+        setCachedRecoveryState({
+          recovery_status: (res.recovery_status ?? 'none'),
+          has_recovery_email: !!res.has_recovery_email,
+          masked_email: res.masked_email ?? null,
+          email_verified: !!res.email_verified,
+          preferences: res.preferences ?? null,
         });
         setFeedback('code-feedback', 'Credencial restaurada. Te llevamos al índice…', 'ok');
         setTimeout(() => location.href = '/tinta/tintamap', 900);

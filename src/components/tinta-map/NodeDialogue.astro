@@ -1,0 +1,112 @@
+---
+/**
+ * NodeDialogue.astro
+ *
+ * Bloque de diálogo con Tinta: imagen + globo con línea rotativa.
+ * Se monta en /nodo (oculto por default) y se revela cuando la
+ * familia devuelta por unlock-node tiene content_type='dialogue'.
+ * El JS de la página rellena los [data-slot] y cicla las líneas.
+ */
+---
+
+<div class="node-dialogue" data-tm-block="dialogue" hidden>
+  <div class="dialogue-inner">
+    <img data-slot="image" src="/images/ui/tinta_lapiz.png" alt="Tinta" class="tinta-img" />
+    <div class="speech">
+      <p data-slot="line" class="speech-text">…</p>
+      <div class="speech-actions">
+        <button type="button" data-slot="next-btn" class="speech-next">Siguiente</button>
+        <span data-slot="counter" class="line-counter">1 / 4</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .node-dialogue { display: block; }
+  .dialogue-inner {
+    display: grid;
+    grid-template-columns: 130px 1fr;
+    gap: 1.1rem;
+    align-items: start;
+  }
+  .tinta-img {
+    width: 130px;
+    height: auto;
+    display: block;
+    transform: rotate(-3deg);
+    filter: drop-shadow(2px 2px 0 rgba(17,17,17,0.15));
+  }
+  .speech {
+    background: rgba(255,255,255,0.78);
+    border: 1.5px solid rgba(17,17,17,0.62);
+    border-radius: 14px;
+    padding: 1.05rem 1.1rem 0.85rem;
+    position: relative;
+  }
+  .speech::before {
+    content: "";
+    position: absolute;
+    left: -11px;
+    top: 26px;
+    width: 0; height: 0;
+    border-top: 9px solid transparent;
+    border-bottom: 9px solid transparent;
+    border-right: 11px solid rgba(17,17,17,0.62);
+  }
+  .speech::after {
+    content: "";
+    position: absolute;
+    left: -8px;
+    top: 27px;
+    width: 0; height: 0;
+    border-top: 8px solid transparent;
+    border-bottom: 8px solid transparent;
+    border-right: 10px solid rgba(255,255,255,0.9);
+  }
+  .speech-text {
+    margin: 0 0 0.7rem;
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: 1.12rem;
+    line-height: 1.5;
+    color: var(--ink);
+    min-height: 2.4em;
+  }
+  .speech-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    justify-content: space-between;
+  }
+  .speech-next {
+    padding: 0.5rem 0.9rem;
+    border: 1.5px solid var(--ink);
+    background: rgba(255,255,255,0.9);
+    border-radius: 3px;
+    font-family: var(--font-accent);
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+  }
+  .line-counter {
+    font-family: var(--font-accent);
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+
+  @media (max-width: 480px) {
+    .dialogue-inner { grid-template-columns: 100px 1fr; gap: 0.8rem; }
+    .tinta-img { width: 100px; }
+    .speech { padding: 0.85rem 0.95rem 0.75rem; }
+    .speech-text { font-size: 1.05rem; }
+  }
+  @media (max-width: 380px) {
+    .dialogue-inner { grid-template-columns: 1fr; }
+    .tinta-img { width: 110px; margin-bottom: 0.4rem; }
+    .speech::before, .speech::after { display: none; }
+  }
+</style>

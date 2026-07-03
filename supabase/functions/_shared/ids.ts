@@ -20,6 +20,12 @@ export function generateRecoveryCode(): string {
   return `D3-${chunk(4)}-${chunk(4)}-${chunk(4)}`;
 }
 
-export function generateClaimCode(): string {
-  return `CLAIM-${chunk(4)}-${chunk(4)}`;
+/**
+ * Claim code legible. Formato: CLAIM-TINTA-<L>-XXXX
+ * donde <L> es la letra final del family_id (ej. 'A' de 'FAMILY-A').
+ * Nunca reutiliza el public_id ni el recovery_code.
+ */
+export function generateClaimCode(familyId: string): string {
+  const letter = (familyId.match(/-([A-Z])$/)?.[1] ?? "X").toUpperCase();
+  return `CLAIM-TINTA-${letter}-${chunk(4)}`;
 }

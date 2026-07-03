@@ -1,12 +1,18 @@
 // attach-recovery-email
-// Asocia un correo (opcional) al perfil vinculado con el device_token.
-// Guarda preferencias; nunca marca nada consentido por defecto.
-// Si Resend está configurado, envía correo de confirmación; si no,
-// deja el correo en `email_outbox` con status pending.
+// Asocia un correo (opcional) al perfil ya existente identificado por
+// el device_token. Reglas duras:
+//   - NUNCA crea un explorer_profile (sólo UPDATE).
+//   - Reinicia email_verified a false si el correo cambia.
+//   - Rechaza si otro perfil ya tiene ese correo.
+//   - Upsert de email_preferences con conflicto en profile_id (nunca duplica).
+//   - Normaliza email a trim+lowercase.
+//   - Devuelve el estado completo de recuperación para que el frontend
+//     hidrate sin depender de localStorage.
 
 import { handlePreflight, jsonResponse } from "../_shared/cors.ts";
 import { getPepper, pepperedHash } from "../_shared/hash.ts";
 import { supabaseAdmin } from "../_shared/db.ts";
+import { maskEmail, computeRecoveryStatus } from "../_shared/mask.ts";
 
 interface Body {
   device_token?: string;
@@ -16,6 +22,7 @@ interface Body {
     event_emails?: boolean;
     project_news?: boolean;
   };
+  confirm_replace?: boolean;
 }
 
 function isValidEmail(s: string): boolean {
@@ -44,6 +51,7 @@ Deno.serve(async (req) => {
     const db = supabaseAdmin;
     const deviceTokenHash = await pepperedHash(deviceToken, pepper);
 
+    // 1. Resolver el perfil vía device_token — nunca creamos aquí.
     const { data: dev } = await db
       .from("explorer_devices")
       .select("profile_id, revoked_at")
@@ -53,13 +61,60 @@ Deno.serve(async (req) => {
       return jsonResponse(req, { ok: false, error: "no_profile" }, 400);
     }
 
-    await db.from("explorer_profiles")
-      .update({ email, updated_at: new Date().toISOString() })
-      .eq("id", dev.profile_id);
+    // 2. Estado actual del perfil.
+    const { data: profile } = await db
+      .from("explorer_profiles")
+      .select("id, email, email_verified")
+      .eq("id", dev.profile_id)
+      .maybeSingle();
+    if (!profile) {
+      return jsonResponse(req, { ok: false, error: "no_profile" }, 400);
+    }
 
+    const emailChanged = (profile.email ?? "") !== email;
+
+    // 3. Regla 7: si cambia el correo, exigir confirm_replace explícito.
+    if (profile.email && emailChanged && !body.confirm_replace) {
+      return jsonResponse(req, {
+        ok: false,
+        kind: "needs_confirmation",
+        title: "¿Reemplazar el correo de recuperación?",
+        body: "Tu credencial ya tiene un correo asociado. Si lo cambias, tendrás que volver a confirmar el nuevo.",
+      }, 200);
+    }
+
+    // 4. Regla dura: prohibir asociar un correo que ya usa otro perfil.
+    if (emailChanged) {
+      const { data: clash } = await db
+        .from("explorer_profiles")
+        .select("id")
+        .eq("email", email)
+        .neq("id", profile.id)
+        .maybeSingle();
+      if (clash) {
+        return jsonResponse(req, {
+          ok: false,
+          kind: "neutral",
+          title: "No pudimos guardar este correo.",
+          body: "Prueba con otro correo o recupera tu credencial existente.",
+        }, 200);
+      }
+    }
+
+    // 5. UPDATE (nunca INSERT). Si el correo cambia, verified vuelve a false.
+    const newVerified = emailChanged ? false : !!profile.email_verified;
+    await db.from("explorer_profiles")
+      .update({
+        email,
+        email_verified: newVerified,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", profile.id);
+
+    // 6. Preferencias: upsert con conflicto en profile_id (jamás duplica).
     const prefs = body.prefs ?? {};
     await db.from("email_preferences").upsert({
-      profile_id: dev.profile_id,
+      profile_id: profile.id,
       recovery_emails: true,
       clue_emails: !!prefs.clue_emails,
       event_emails: !!prefs.event_emails,
@@ -67,38 +122,45 @@ Deno.serve(async (req) => {
       consented_at: new Date().toISOString(),
     }, { onConflict: "profile_id" });
 
-    // Enviar correo de confirmación si Resend está configurado.
-    const resendKey = Deno.env.get("RESEND_API_KEY");
-    const from = Deno.env.get("RECOVERY_EMAIL_FROM") ?? "Tinta <noreply@example.com>";
-    const subject = "Tu credencial de Tinta estuvo aquí";
-    const bodyText =
-      "Guardamos este correo asociado a tu credencial de exploración.\n" +
-      "Nunca te enviaremos publicidad. Sólo podremos ayudarte a recuperar tu recorrido.\n";
-
-    if (resendKey) {
-      try {
-        await fetch("https://api.resend.com/emails", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${resendKey}`,
-          },
-          body: JSON.stringify({ from, to: [email], subject, text: bodyText }),
-        });
-      } catch (err) {
-        console.warn("Resend error, dejando en outbox", err);
+    // 7. Confirmación por correo (Resend si hay key; si no, encolar).
+    if (emailChanged) {
+      const resendKey = Deno.env.get("RESEND_API_KEY");
+      const from = Deno.env.get("RECOVERY_EMAIL_FROM") ?? "Tinta <noreply@example.com>";
+      const subject = "Tu credencial de Tinta estuvo aquí";
+      const bodyText =
+        "Guardamos este correo asociado a tu credencial de exploración.\n" +
+        "Nunca te enviaremos publicidad. Sólo podremos ayudarte a recuperar tu recorrido.\n";
+      if (resendKey) {
+        try {
+          await fetch("https://api.resend.com/emails", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${resendKey}` },
+            body: JSON.stringify({ from, to: [email], subject, text: bodyText }),
+          });
+        } catch (err) {
+          console.warn("Resend error, dejando en outbox", err);
+          await db.from("email_outbox").insert({
+            to_email: email, subject, body_text: bodyText, kind: "attach_confirmation",
+          });
+        }
+      } else {
         await db.from("email_outbox").insert({
           to_email: email, subject, body_text: bodyText, kind: "attach_confirmation",
+          status: "skipped", last_error: "SMTP no configurado",
         });
       }
-    } else {
-      await db.from("email_outbox").insert({
-        to_email: email, subject, body_text: bodyText, kind: "attach_confirmation",
-        status: "skipped", last_error: "SMTP no configurado",
-      });
     }
 
-    return jsonResponse(req, { ok: true, email_saved: true, delivery: resendKey ? "sent" : "queued" });
+    // 8. Devolver estado normalizado que el frontend usa como fuente de verdad.
+    return jsonResponse(req, {
+      ok: true,
+      email_saved: true,
+      changed: emailChanged,
+      has_recovery_email: true,
+      masked_email: maskEmail(email),
+      email_verified: newVerified,
+      recovery_status: computeRecoveryStatus(email, newVerified),
+    });
   } catch (e) {
     console.error("attach-recovery-email error", e);
     return jsonResponse(req, { ok: false, error: "internal" }, 500);

@@ -10,6 +10,7 @@ import { getPepper, pepperedHash } from "../_shared/hash.ts";
 import { generatePublicId, generateRecoveryCode } from "../_shared/ids.ts";
 import { supabaseAdmin } from "../_shared/db.ts";
 import { computeProgress } from "../_shared/progress.ts";
+import { ensureClaimForCompletedFamily } from "../_shared/rewards.ts";
 
 interface Body {
   token?: string;
@@ -178,6 +179,19 @@ Deno.serve(async (req) => {
     // 6. Progreso
     const progress = await computeProgress(db, profileId!);
 
+    // 7. Cierre de loop — si la familia queda completada, garantiza un claim
+    //    único. Idempotente: re-escaneos devuelven el mismo claim_code.
+    const famProgress = progress.families.find(
+      (f) => f.family_id === placement.family_id,
+    );
+    const rewardClaim = await ensureClaimForCompletedFamily(
+      db,
+      profileId!,
+      placement.family_id,
+      family.name,
+      !!famProgress?.completed,
+    );
+
     return jsonResponse(req, {
       ok: true,
       is_first_scan_of_placement: isFirstScan,
@@ -200,6 +214,7 @@ Deno.serve(async (req) => {
         reward: family.reward_json,
       },
       progress,
+      reward_claim: rewardClaim,
     });
   } catch (e) {
     console.error("unlock-node error", e);
