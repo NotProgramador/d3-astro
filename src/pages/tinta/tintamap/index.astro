@@ -1,0 +1,154 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import TintaMapHero from '../../../components/tinta-map/TintaMapHero.astro';
+import FamilyIndex from '../../../components/tinta-map/FamilyIndex.astro';
+import NfcInstructions from '../../../components/tinta-map/NfcInstructions.astro';
+
+// Fallback: 3 familias del piloto. El script cliente puede refrescar
+// esta lista desde Supabase si está configurado.
+const families = [
+  { id: 'FAMILY-A', name: 'Tinta sostiene un lápiz',
+    description: 'Pregunta breve, animación mínima y un pequeño tutorial de dibujo.',
+    symbol: '✏️' },
+  { id: 'FAMILY-B', name: 'Tinta observa',
+    description: 'Tips de dibujo, una mini viñeta y un ejercicio breve.',
+    symbol: '👁️' },
+  { id: 'FAMILY-C', name: 'Tinta transforma',
+    description: 'Dinámica creativa: una mancha, una forma, un reto.',
+    symbol: '🌀' },
+];
+---
+
+<BaseLayout title="Tinta estuvo aquí — D³">
+  <TintaMapHero />
+
+  <section class="tm-actions-bar paper-card">
+    <div class="actions-copy">
+      <p class="eyebrow">acciones</p>
+      <h2>Ya encontraste algo, o quieres empezar</h2>
+    </div>
+    <div class="actions-row">
+      <button type="button" id="tm-found-node" class="btn-primary">
+        Ya encontré un nodo
+      </button>
+      <a href="/tinta/tintamap/recuperar" class="btn-line">
+        Recuperar mi credencial
+      </a>
+      <a href="/tinta/tintamap/credencial" class="btn-line" id="tm-my-cred" hidden>
+        Ver mi credencial
+      </a>
+    </div>
+    <p class="hint" data-slot="explorer-hint"></p>
+  </section>
+
+  <FamilyIndex families={families} placementsPerFamily={3} />
+
+  <NfcInstructions />
+
+  <section class="tm-editorial paper-card">
+    <p class="eyebrow">manifiesto</p>
+    <p class="editorial-phrase">
+      "Cada aparición de Tinta está ligada a una ubicación real."
+    </p>
+    <p class="editorial-body">
+      No mostramos las ubicaciones exactas. Tinta se deja encontrar. Algunos
+      nodos parecen bloqueados hasta que alguien se acerca de verdad al lugar
+      donde viven.
+    </p>
+  </section>
+</BaseLayout>
+
+<script>
+  import { hasExplorer, getStoredPublicId, getCachedProgress } from '../../../lib/tintamap-storage.ts';
+
+  const hint = document.querySelector<HTMLElement>('[data-slot="explorer-hint"]');
+  const myCred = document.getElementById('tm-my-cred');
+
+  if (hasExplorer()) {
+    const pid = getStoredPublicId();
+    const prog = getCachedProgress();
+    if (hint) {
+      hint.textContent = pid
+        ? `Explorando como ${pid}${prog ? ` · ${prog.discovered_count} nodo${prog.discovered_count === 1 ? '' : 's'}` : ''}.`
+        : '';
+    }
+    if (myCred) myCred.hidden = false;
+  } else if (hint) {
+    hint.textContent = 'Todavía no has creado credencial. Se generará automáticamente cuando encuentres tu primer nodo.';
+  }
+
+  const foundBtn = document.getElementById('tm-found-node');
+  foundBtn?.addEventListener('click', () => {
+    const t = prompt('Pega la URL del nodo o su token (para pruebas locales):');
+    if (!t) return;
+    let token = t.trim();
+    try {
+      const u = new URL(t);
+      const k = u.searchParams.get('k');
+      if (k) token = k;
+    } catch { /* not a URL, use as-is */ }
+    location.href = `/tinta/tintamap/nodo?k=${encodeURIComponent(token)}`;
+  });
+</script>
+
+<style>
+  .tm-actions-bar {
+    display: grid;
+    gap: 0.9rem;
+    margin: 1.5rem 0 2rem;
+    max-width: 780px;
+  }
+  .eyebrow {
+    margin: 0 0 0.35rem;
+    font-family: var(--font-accent);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--accent);
+  }
+  .actions-copy h2 { margin: 0; font-size: 1.4rem; }
+  .actions-row {
+    display: flex;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+  }
+  .btn-primary,
+  .btn-line {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.7rem 1rem;
+    border: 1.5px solid var(--ink);
+    border-radius: 3px;
+    text-decoration: none;
+    color: var(--ink);
+    background: rgba(255,255,255,0.85);
+    font-family: var(--font-body);
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 4px 4px 0 #11111140;
+    transition: transform 140ms ease, box-shadow 140ms ease;
+  }
+  .btn-line { background: rgba(255,255,255,0.55); font-weight: 600; }
+  .btn-primary:hover, .btn-line:hover {
+    transform: translateY(-1px);
+    box-shadow: 5px 5px 0 #11111133;
+  }
+  .hint { margin: 0; color: var(--ink-soft); font-size: 0.9rem; }
+
+  .tm-editorial { max-width: 720px; margin-top: 2rem; }
+  .editorial-phrase {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: clamp(1.1rem, 3vw, 1.4rem);
+    line-height: 1.5;
+    margin: 0 0 0.6rem;
+  }
+  .editorial-body {
+    margin: 0;
+    color: var(--ink-soft);
+    line-height: 1.7;
+    max-width: 55ch;
+  }
+</style>

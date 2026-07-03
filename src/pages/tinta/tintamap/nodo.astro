@@ -1,0 +1,341 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import DiscoveryModal from '../../../components/tinta-map/DiscoveryModal.astro';
+---
+
+<BaseLayout title="Aparición — Tinta estuvo aquí">
+  <div id="tm-node-shell" class="tm-node-shell">
+    <section class="tm-loading paper-card" data-state="loading">
+      <p class="eyebrow">buscando la aparición…</p>
+      <p class="phrase">Tinta se está reacomodando.</p>
+    </section>
+  </div>
+
+  <DiscoveryModal />
+</BaseLayout>
+
+<script>
+  import { unlockNode, isTintaMapConfigured } from '../../../lib/tintamap-api.ts';
+  import {
+    setStoredPublicId,
+    setStoredRecoveryCode,
+    setStoredCreatedAt,
+    setCachedProgress,
+    hasExplorer,
+  } from '../../../lib/tintamap-storage.ts';
+
+  const shell = document.getElementById('tm-node-shell')!;
+  const modal = document.getElementById('tm-discovery-modal') as HTMLDialogElement | null;
+
+  function editorial(title: string, body: string) {
+    shell.innerHTML = '';
+    const el = document.createElement('section');
+    el.className = 'tm-editorial paper-card';
+    el.innerHTML = `
+      <p class="eyebrow">tinta estuvo aquí</p>
+      <h1>${escapeHtml(title)}</h1>
+      <p class="phrase">${escapeHtml(body)}</p>
+      <p><a href="/tinta/tintamap" class="btn-line">Volver al índice</a></p>
+    `;
+    shell.appendChild(el);
+  }
+
+  function escapeHtml(s: string): string {
+    return s.replace(/[&<>"']/g, (c) => ({
+      '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;',
+    } as any)[c]);
+  }
+
+  async function main() {
+    const params = new URLSearchParams(location.search);
+    const token = (params.get('k') ?? '').trim();
+
+    if (!token) {
+      editorial('Falta la señal.', 'Este enlace no incluye una llave para abrir la aparición.');
+      return;
+    }
+
+    if (!isTintaMapConfigured()) {
+      editorial('Tinta aún no está conectada.',
+        'La experiencia todavía no tiene sus credenciales configuradas en este entorno.');
+      return;
+    }
+
+    let res: any;
+    try {
+      res = await unlockNode(token);
+    } catch (e) {
+      editorial('Algo se movió en el mundo de Tinta.', 'Intenta acercarte otra vez en un momento.');
+      return;
+    }
+
+    if (!res?.ok) {
+      editorial(res?.title ?? 'No pudimos abrir esta aparición.',
+                res?.body ?? 'Vuelve a intentarlo más tarde.');
+      return;
+    }
+
+    // Éxito: persistir credencial si es la primera vez
+    if (res.created_credentials) {
+      setStoredPublicId(res.created_credentials.public_id);
+      setStoredRecoveryCode(res.created_credentials.recovery_code);
+      setStoredCreatedAt(new Date().toISOString());
+    } else if (res.profile?.public_id) {
+      setStoredPublicId(res.profile.public_id);
+    }
+
+    if (res.progress) {
+      setCachedProgress({
+        discovered_count: res.progress.discovered_count,
+        families: res.progress.families,
+      });
+    }
+
+    // Modal de descubrimiento
+    if (modal) {
+      const famProgress = res.progress?.families?.find((f: any) => f.family_id === res.placement.family_id);
+      document.getElementById('tm-modal-title')!.textContent = `Encontraste ${res.placement.id}`;
+      document.getElementById('tm-modal-family')!.textContent = res.family.name;
+      document.getElementById('tm-scan-count')!.textContent = String(res.placement.scan_count);
+      document.getElementById('tm-fam-progress')!.textContent =
+        famProgress ? `${famProgress.discovered}/${famProgress.total}` : '—';
+
+      const invitation = document.getElementById('tm-invitation');
+      if (invitation) {
+        invitation.hidden = !(res.created_credentials || !hasExplorer());
+      }
+
+      modal.addEventListener('close', () => renderContent(res), { once: true });
+      modal.showModal();
+    } else {
+      renderContent(res);
+    }
+  }
+
+  function renderContent(res: any) {
+    const family = res.family;
+    const content = family?.content ?? {};
+    const famProgress = res.progress?.families?.find((f: any) => f.family_id === family.id) ?? null;
+
+    shell.innerHTML = '';
+    const wrap = document.createElement('div');
+
+    wrap.innerHTML = `
+      <p class="tm-return"><a href="/tinta/tintamap">← Volver al índice</a></p>
+      <section class="node-content paper-card">
+        <header class="node-head">
+          <p class="eyebrow">aparición encontrada</p>
+          <h2>${escapeHtml(family.name)}</h2>
+          <p class="mini-progress">
+            ${famProgress ? `${famProgress.discovered} de ${famProgress.total} apariciones` : ''}
+            ${famProgress?.completed ? `<span class="badge">familia completada</span>` : ''}
+          </p>
+        </header>
+        <div id="tm-content-slot"></div>
+      </section>
+    `;
+    shell.appendChild(wrap);
+    renderFamilyContent(family, content);
+
+    if (famProgress?.completed && family.reward?.placeholder) {
+      const reward = document.createElement('section');
+      reward.className = 'paper-card tm-reward';
+      reward.innerHTML = `
+        <p class="eyebrow">recompensa</p>
+        <h3>${escapeHtml(String(family.reward.placeholder))}</h3>
+        <p class="hint">
+          Completaste esta familia. La entrega de la recompensa se coordina en persona
+          por ahora; guarda tu credencial para reclamarla.
+        </p>
+      `;
+      shell.appendChild(reward);
+    }
+  }
+
+  function renderFamilyContent(family: any, content: any) {
+    const slot = document.getElementById('tm-content-slot');
+    if (!slot) return;
+    const type = family.content_type;
+
+    if (type === 'dialogue') {
+      const lines: string[] = Array.isArray(content?.dialogues) ? content.dialogues : [];
+      slot.innerHTML = `
+        <div class="dialogue-block">
+          ${family.image_url ? `<img src="${family.image_url}" alt="Tinta" class="tinta-img" />` : ''}
+          <div class="speech">
+            <p id="tm-line" class="speech-text">${escapeHtml(lines[0] ?? '…')}</p>
+            <button type="button" id="tm-next" class="speech-next">Siguiente</button>
+          </div>
+        </div>
+        ${content?.tutorial ? `
+          <details class="tutorial">
+            <summary>Ver tutorial: ${escapeHtml(content.tutorial.title ?? '')}</summary>
+            <ol>${(content.tutorial.steps ?? []).map((s: string) => `<li>${escapeHtml(s)}</li>`).join('')}</ol>
+          </details>` : ''}
+      `;
+      let i = 0;
+      document.getElementById('tm-next')?.addEventListener('click', () => {
+        i = (i + 1) % Math.max(lines.length, 1);
+        const el = document.getElementById('tm-line');
+        if (el) el.textContent = lines[i] ?? '';
+      });
+    } else if (type === 'tips') {
+      slot.innerHTML = `
+        <ul class="tips-list">${(content?.tips ?? []).map((t: string) => `<li>${escapeHtml(t)}</li>`).join('')}</ul>
+        ${content?.vignette ? `<p class="placeholder"><em>Viñeta:</em> ${escapeHtml(content.vignette)}</p>` : ''}
+        ${content?.exercise ? `<div class="exercise"><p class="ex-label">Ejercicio</p><p>${escapeHtml(content.exercise)}</p></div>` : ''}
+      `;
+    } else if (type === 'dynamic') {
+      slot.innerHTML = `
+        <div class="stain-placeholder" aria-hidden="true">◍</div>
+        ${content?.stain ? `<p class="placeholder">${escapeHtml(content.stain)}</p>` : ''}
+        ${content?.challenge ? `<div class="exercise"><p class="ex-label">Reto</p><p>${escapeHtml(content.challenge)}</p></div>` : ''}
+      `;
+    } else {
+      slot.innerHTML = `<p class="placeholder">Contenido aún no disponible.</p>`;
+    }
+  }
+
+  main();
+</script>
+
+<style>
+  .tm-node-shell { display: grid; gap: 1rem; }
+  .tm-return { margin: 0 0 0.5rem; }
+  .tm-return a {
+    font-family: var(--font-accent);
+    font-size: 0.82rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-soft);
+    text-decoration: none;
+  }
+  .tm-return a:hover { color: var(--accent); }
+  .eyebrow {
+    margin: 0 0 0.35rem;
+    font-family: var(--font-accent);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--accent);
+  }
+  .tm-loading .phrase, .tm-editorial .phrase {
+    font-family: var(--font-display);
+    font-style: italic;
+    color: var(--ink-soft);
+    margin: 0 0 0.8rem;
+  }
+  .tm-editorial { max-width: 620px; }
+
+  /* Estilos reutilizables para el contenido renderizado por script */
+  .node-content { max-width: 780px; }
+  .node-head h2 { margin: 0 0 0.4rem; font-size: 1.8rem; }
+  .mini-progress {
+    margin: 0 0 1rem;
+    font-family: var(--font-accent);
+    font-size: 0.82rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+  }
+  .badge {
+    background: var(--accent);
+    color: #fff;
+    padding: 0.15rem 0.5rem;
+    border-radius: 999px;
+    font-size: 0.7rem;
+    letter-spacing: 0.06em;
+  }
+  .dialogue-block {
+    display: grid;
+    grid-template-columns: 120px 1fr;
+    gap: 1rem;
+    align-items: start;
+  }
+  .tinta-img { width: 120px; height: auto; transform: rotate(-3deg); }
+  .speech {
+    background: rgba(255,255,255,0.7);
+    border: 1.5px solid rgba(17,17,17,0.6);
+    border-radius: 12px;
+    padding: 1rem;
+    position: relative;
+  }
+  .speech::before {
+    content: "";
+    position: absolute;
+    left: -10px; top: 22px;
+    border-top: 8px solid transparent;
+    border-bottom: 8px solid transparent;
+    border-right: 10px solid rgba(17,17,17,0.6);
+  }
+  .speech-text {
+    margin: 0 0 0.8rem;
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: 1.1rem;
+    line-height: 1.5;
+  }
+  .speech-next {
+    padding: 0.4rem 0.8rem;
+    border: 1.5px solid var(--ink);
+    background: rgba(255,255,255,0.9);
+    border-radius: 3px;
+    font-family: var(--font-accent);
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+  }
+  .tutorial {
+    margin-top: 1rem;
+    background: rgba(255,255,255,0.55);
+    border: 1px dashed rgba(17,17,17,0.35);
+    border-radius: 3px;
+    padding: 0.6rem 0.9rem;
+  }
+  .tutorial summary { cursor: pointer; font-weight: 700; }
+  .tutorial ol { margin: 0.6rem 0 0.2rem 1.2rem; line-height: 1.7; }
+  .tips-list { margin: 0.4rem 0 1rem 1.1rem; line-height: 1.7; }
+  .placeholder { color: var(--ink-soft); font-style: italic; margin: 0.4rem 0; }
+  .exercise {
+    margin-top: 0.8rem;
+    padding: 0.7rem 0.9rem;
+    background: rgba(217,72,95,0.08);
+    border-left: 3px solid var(--accent);
+  }
+  .ex-label {
+    margin: 0 0 0.2rem;
+    font-family: var(--font-accent);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.72rem;
+    color: var(--accent);
+  }
+  .stain-placeholder {
+    font-size: 5rem;
+    text-align: center;
+    margin: 1rem 0;
+  }
+  .tm-reward { max-width: 620px; }
+  .tm-reward h3 { margin: 0 0 0.4rem; font-size: 1.35rem; }
+  .btn-line {
+    display: inline-flex;
+    padding: 0.55rem 0.9rem;
+    border: 1.5px solid var(--ink);
+    border-radius: 3px;
+    background: rgba(255,255,255,0.7);
+    text-decoration: none;
+    color: var(--ink);
+    font-weight: 700;
+  }
+
+  @media (max-width: 640px) {
+    .dialogue-block { grid-template-columns: 1fr; }
+    .tinta-img { width: 90px; }
+  }
+</style>

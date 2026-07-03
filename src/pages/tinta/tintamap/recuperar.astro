@@ -1,0 +1,103 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import RecoveryForm from '../../../components/tinta-map/RecoveryForm.astro';
+---
+
+<BaseLayout title="Recuperar credencial — Tinta estuvo aquí">
+  <section class="rec-hero">
+    <p class="eyebrow">tinta estuvo aquí</p>
+    <h1>Recuperar mi credencial</h1>
+    <p class="hero-phrase">"lo que encontraste sigue siendo tuyo."</p>
+    <p class="intro">
+      Si tienes tu código de recuperación (formato D3-XXXX-XXXX-XXXX)
+      podemos restaurar tu recorrido en este dispositivo. Si añadiste un
+      correo, también podemos ayudarte desde ahí.
+    </p>
+  </section>
+
+  <RecoveryForm />
+
+  <p class="tm-return"><a href="/tinta/tintamap">← Volver al índice</a></p>
+</BaseLayout>
+
+<script>
+  import { recoverByCode, sendRecoveryEmail } from '../../../lib/tintamap-api.ts';
+  import { setStoredPublicId, setStoredCreatedAt, setCachedProgress } from '../../../lib/tintamap-storage.ts';
+
+  function setFeedback(target: string, msg: string, kind: 'error' | 'ok' | '' = '') {
+    const el = document.querySelector<HTMLElement>(`[data-target="${target}"]`);
+    if (!el) return;
+    el.className = 'feedback' + (kind ? ` ${kind}` : '');
+    el.textContent = msg;
+  }
+
+  document.getElementById('tm-recover-code-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const form = e.currentTarget as HTMLFormElement;
+    const code = (form.elements.namedItem('recovery_code') as HTMLInputElement).value.trim();
+    setFeedback('code-feedback', 'Verificando…');
+    try {
+      const res: any = await recoverByCode(code);
+      if (res?.ok) {
+        if (res.profile?.public_id) setStoredPublicId(res.profile.public_id);
+        if (res.profile?.created_at) setStoredCreatedAt(res.profile.created_at);
+        if (res.progress) setCachedProgress({
+          discovered_count: res.progress.discovered_count,
+          families: res.progress.families,
+        });
+        setFeedback('code-feedback', 'Credencial restaurada. Te llevamos al índice…', 'ok');
+        setTimeout(() => location.href = '/tinta/tintamap', 900);
+      } else {
+        setFeedback('code-feedback', res?.body ?? 'No pudimos recuperar esta credencial.', 'error');
+      }
+    } catch {
+      setFeedback('code-feedback', 'No pudimos conectar. Intenta de nuevo en un momento.', 'error');
+    }
+  });
+
+  document.getElementById('tm-recover-email-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const form = e.currentTarget as HTMLFormElement;
+    const email = (form.elements.namedItem('email') as HTMLInputElement).value.trim();
+    setFeedback('email-feedback', 'Enviando…');
+    try {
+      const res: any = await sendRecoveryEmail(email);
+      setFeedback('email-feedback',
+        res?.message ?? 'Si encontramos una credencial asociada, recibirás un correo.',
+        'ok');
+    } catch {
+      setFeedback('email-feedback', 'No pudimos conectar. Intenta de nuevo en un momento.', 'error');
+    }
+  });
+</script>
+
+<style>
+  .rec-hero { max-width: 720px; margin-bottom: 1.6rem; }
+  .eyebrow {
+    margin: 0 0 0.5rem;
+    font-family: var(--font-accent);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--accent);
+  }
+  .rec-hero h1 { margin: 0 0 0.6rem; font-size: clamp(2rem, 5vw, 3.2rem); }
+  .hero-phrase {
+    font-family: var(--font-display);
+    font-style: italic;
+    color: var(--ink-soft);
+    margin: 0 0 0.8rem;
+  }
+  .intro { margin: 0; max-width: 55ch; color: var(--ink-soft); line-height: 1.7; }
+  .tm-return { margin-top: 1.5rem; }
+  .tm-return a {
+    font-family: var(--font-accent);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-size: 0.82rem;
+    color: var(--ink-soft);
+    text-decoration: none;
+  }
+  .tm-return a:hover { color: var(--accent); }
+</style>

@@ -1,0 +1,105 @@
+---
+// Modal de descubrimiento. Se rellena vía script cuando `unlock-node`
+// responde. Usa <dialog> nativo, sin dependencias.
+---
+
+<dialog id="tm-discovery-modal" class="tm-modal">
+  <form method="dialog" class="tm-modal-inner paper-card">
+    <p class="eyebrow">encontraste un nodo</p>
+    <h2 id="tm-modal-title">—</h2>
+    <p id="tm-modal-family" class="tm-family-name">—</p>
+    <div class="tm-stats">
+      <div>
+        <span class="stat-num" id="tm-scan-count">0</span>
+        <span class="stat-label">escaneos totales</span>
+      </div>
+      <div>
+        <span class="stat-num" id="tm-fam-progress">0/0</span>
+        <span class="stat-label">progreso de familia</span>
+      </div>
+    </div>
+    <p id="tm-invitation" class="tm-invite" hidden>
+      ¿Quieres conservar tu recorrido? <a href="/tinta/tintamap/credencial">Crear mi credencial</a>
+    </p>
+    <div class="tm-actions">
+      <button type="submit" class="tm-btn-primary" id="tm-enter">Entrar</button>
+    </div>
+  </form>
+</dialog>
+
+<style>
+  .tm-modal {
+    border: none;
+    background: transparent;
+    padding: 0;
+    max-width: min(560px, calc(100vw - 32px));
+  }
+  .tm-modal::backdrop {
+    background: rgba(23, 20, 17, 0.55);
+    backdrop-filter: blur(2px);
+  }
+  .tm-modal-inner { padding: 1.6rem; }
+  .eyebrow {
+    margin: 0 0 0.4rem;
+    font-family: var(--font-accent);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--accent);
+  }
+  #tm-modal-title { margin: 0 0 0.3rem; font-size: 1.8rem; }
+  .tm-family-name {
+    margin: 0 0 1rem;
+    font-family: var(--font-display);
+    font-style: italic;
+    color: var(--ink-soft);
+  }
+  .tm-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.8rem;
+    margin: 1rem 0;
+  }
+  .tm-stats > div {
+    border-top: 1.5px solid rgba(17,17,17,0.15);
+    padding-top: 0.5rem;
+  }
+  .stat-num {
+    display: block;
+    font-family: var(--font-display);
+    font-size: 1.6rem;
+    line-height: 1;
+    color: var(--ink);
+  }
+  .stat-label {
+    font-family: var(--font-accent);
+    font-size: 0.72rem;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+  .tm-invite {
+    margin: 0.5rem 0 1rem;
+    padding: 0.7rem 0.8rem;
+    background: rgba(217,72,95,0.08);
+    border-left: 3px solid var(--accent);
+    font-size: 0.95rem;
+  }
+  .tm-actions { display: flex; justify-content: flex-end; }
+  .tm-btn-primary {
+    display: inline-flex;
+    padding: 0.75rem 1.2rem;
+    border: 1.5px solid var(--ink);
+    border-radius: 3px;
+    background: rgba(255,255,255,0.85);
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 4px 4px 0 #11111140;
+    transition: transform 140ms ease, box-shadow 140ms ease;
+  }
+  .tm-btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 5px 5px 0 #11111133;
+  }
+</style>

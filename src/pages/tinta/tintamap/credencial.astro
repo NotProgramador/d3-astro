@@ -1,0 +1,300 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import ExplorerCredential from '../../../components/tinta-map/ExplorerCredential.astro';
+---
+
+<BaseLayout title="Mi credencial — Tinta estuvo aquí">
+  <section class="cred-hero">
+    <p class="eyebrow">tinta estuvo aquí</p>
+    <h1>Mi credencial</h1>
+    <p class="hero-phrase">"guarda esto: es tu manera de volver."</p>
+  </section>
+
+  <div id="tm-cred-slot">
+    <!-- Se renderiza ExplorerCredential en modo public o private según haya recovery code local -->
+    <section class="paper-card empty" data-empty>
+      <p class="eyebrow">todavía sin credencial</p>
+      <h2>Aún no has creado tu credencial</h2>
+      <p>
+        Se generará automáticamente cuando escanees tu primer nodo.
+        Si ya tenías una, puedes recuperarla.
+      </p>
+      <p class="actions">
+        <a href="/tinta/tintamap/recuperar" class="btn-line">Recuperar mi credencial</a>
+        <button type="button" id="tm-create-now" class="btn-line">Crear una ahora</button>
+      </p>
+    </section>
+  </div>
+
+  <p class="tm-return"><a href="/tinta/tintamap">← Volver al índice</a></p>
+</BaseLayout>
+
+<script>
+  import {
+    hasExplorer, getStoredPublicId, getStoredRecoveryCode, getStoredCreatedAt,
+    getCachedProgress, setStoredPublicId, setStoredRecoveryCode, setStoredCreatedAt,
+    setCachedProgress,
+  } from '../../../lib/tintamap-storage.ts';
+  import { createExplorer } from '../../../lib/tintamap-api.ts';
+
+  function render() {
+    const slot = document.getElementById('tm-cred-slot')!;
+    const publicId = getStoredPublicId();
+    const recovery = getStoredRecoveryCode();
+    const created = getStoredCreatedAt();
+    const progress = getCachedProgress();
+
+    if (!publicId) {
+      // Empty state ya renderizado
+      const btn = document.getElementById('tm-create-now');
+      btn?.addEventListener('click', async () => {
+        btn.setAttribute('disabled', 'true');
+        btn.textContent = 'Creando…';
+        try {
+          const res: any = await createExplorer();
+          if (res?.ok && res.credentials) {
+            setStoredPublicId(res.credentials.public_id);
+            setStoredRecoveryCode(res.credentials.recovery_code);
+            setStoredCreatedAt(new Date().toISOString());
+            if (res.progress) setCachedProgress({
+              discovered_count: res.progress.discovered_count,
+              families: res.progress.families,
+            });
+            render();
+          } else if (res?.ok && res.already_exists && res.profile) {
+            setStoredPublicId(res.profile.public_id);
+            setStoredCreatedAt(res.profile.created_at);
+            render();
+          } else {
+            btn.textContent = 'No se pudo. Intenta más tarde';
+          }
+        } catch {
+          btn.textContent = 'Error de conexión';
+        }
+      });
+      return;
+    }
+
+    const mode = recovery ? 'private' : 'public';
+
+    slot.innerHTML = `
+      <article class="tm-cred paper-card mode-${mode}">
+        <header class="tm-cred-head">
+          <p class="eyebrow">credencial de explorador</p>
+          <h2 class="tm-cred-title">Tinta estuvo aquí</h2>
+        </header>
+        <div class="tm-cred-body">
+          <div class="tm-cred-row"><span class="label">ID público</span><code class="value">${publicId}</code></div>
+          <div class="tm-cred-row"><span class="label">Nodos descubiertos</span><span class="value">${progress?.discovered_count ?? 0}</span></div>
+          <div class="tm-cred-row"><span class="label">Familias iniciadas</span><span class="value">${(progress?.families ?? []).filter(f => f.discovered > 0).length}</span></div>
+          <div class="tm-cred-row"><span class="label">Familias completadas</span><span class="value">${(progress?.families ?? []).filter(f => f.completed).length}</span></div>
+          <div class="tm-cred-row"><span class="label">Creada</span><span class="value">${created ? new Date(created).toLocaleDateString() : '—'}</span></div>
+          ${mode === 'private' ? `
+            <div class="tm-cred-row recovery"><span class="label">Código de recuperación</span><code class="value big" id="tm-recovery">${recovery}</code></div>
+          ` : ''}
+        </div>
+        <footer class="tm-cred-foot">
+          ${mode === 'private' ? `
+            <div class="tm-cred-actions">
+              <button type="button" id="tm-copy" class="btn-line">Copiar código</button>
+              <a href="#agregar-correo" class="btn-line">Agregar correo de recuperación</a>
+            </div>
+            <p class="warning">
+              Guarda este código. Te permitirá recuperar tu recorrido si cambias
+              de dispositivo o borras tus datos.
+            </p>
+          ` : `
+            <p class="hint">
+              Esta vista es pública. Tu código de recuperación no se muestra aquí porque
+              no está disponible en este dispositivo.
+            </p>
+          `}
+        </footer>
+      </article>
+
+      ${mode === 'private' ? renderEmailForm() : ''}
+    `;
+
+    document.getElementById('tm-copy')?.addEventListener('click', async () => {
+      const el = document.getElementById('tm-recovery');
+      if (!el) return;
+      try {
+        await navigator.clipboard.writeText(el.textContent ?? '');
+        const b = document.getElementById('tm-copy')!;
+        const t = b.textContent;
+        b.textContent = '¡Copiado!';
+        setTimeout(() => { b.textContent = t; }, 1400);
+      } catch {}
+    });
+
+    wireEmailForm();
+  }
+
+  function renderEmailForm(): string {
+    return `
+      <section id="agregar-correo" class="paper-card email-section">
+        <p class="eyebrow">correo opcional</p>
+        <h2>Agregar correo de recuperación</h2>
+        <p class="hint">
+          Tu correo sólo se usará para ayudarte a recuperar tu credencial.
+          No recibirás publicidad ni mensajes sin autorización.
+        </p>
+        <form id="tm-email-form" class="email-form">
+          <label>
+            <span class="label">Correo</span>
+            <input name="email" type="email" required placeholder="tu@correo.com" />
+          </label>
+          <fieldset class="prefs">
+            <legend class="label">Suscripciones opcionales</legend>
+            <label class="check"><input type="checkbox" name="clue_emails" /> Quiero recibir pistas ocasionales de nuevos nodos</label>
+            <label class="check"><input type="checkbox" name="event_emails" /> Quiero enterarme de sesiones y actividades</label>
+            <label class="check"><input type="checkbox" name="project_news" /> Quiero recibir novedades de Domingos de Dibujar</label>
+          </fieldset>
+          <button type="submit" class="btn-primary">Guardar</button>
+          <p class="feedback" data-target="email-attach-feedback" aria-live="polite"></p>
+        </form>
+      </section>
+    `;
+  }
+
+  function wireEmailForm() {
+    const form = document.getElementById('tm-email-form') as HTMLFormElement | null;
+    if (!form) return;
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const fb = document.querySelector<HTMLElement>('[data-target="email-attach-feedback"]');
+      if (fb) { fb.className = 'feedback'; fb.textContent = 'Guardando…'; }
+      const data = new FormData(form);
+      const email = String(data.get('email') ?? '');
+      try {
+        const { attachRecoveryEmail } = await import('../../../lib/tintamap-api.ts');
+        const res: any = await attachRecoveryEmail(email, {
+          clue_emails: data.get('clue_emails') === 'on',
+          event_emails: data.get('event_emails') === 'on',
+          project_news: data.get('project_news') === 'on',
+        });
+        if (fb) {
+          if (res?.ok) {
+            fb.className = 'feedback ok';
+            fb.textContent = res.delivery === 'sent'
+              ? 'Guardado. Te enviamos un correo de confirmación.'
+              : 'Guardado. El envío de correo está en cola (SMTP en configuración).';
+          } else {
+            fb.className = 'feedback error';
+            fb.textContent = 'No pudimos guardar el correo.';
+          }
+        }
+      } catch {
+        if (fb) { fb.className = 'feedback error'; fb.textContent = 'Sin conexión con Tinta.'; }
+      }
+    });
+  }
+
+  render();
+</script>
+
+<style>
+  .cred-hero { max-width: 680px; margin-bottom: 1.4rem; }
+  .eyebrow {
+    margin: 0 0 0.5rem;
+    font-family: var(--font-accent);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--accent);
+  }
+  .cred-hero h1 { margin: 0 0 0.6rem; font-size: clamp(2rem, 5vw, 3.2rem); }
+  .hero-phrase {
+    font-family: var(--font-display);
+    font-style: italic;
+    color: var(--ink-soft);
+    margin: 0;
+  }
+  .empty { max-width: 620px; }
+  .empty h2 { margin: 0 0 0.5rem; }
+  .actions { display: flex; gap: 0.6rem; flex-wrap: wrap; margin-top: 0.8rem; }
+  .btn-line, .btn-primary {
+    display: inline-flex;
+    padding: 0.55rem 0.9rem;
+    border: 1.5px solid var(--ink);
+    border-radius: 3px;
+    background: rgba(255,255,255,0.75);
+    color: var(--ink);
+    text-decoration: none;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .btn-primary { background: rgba(255,255,255,0.9); box-shadow: 4px 4px 0 #11111140; }
+
+  .tm-cred { max-width: 520px; margin-bottom: 1.4rem; }
+  .tm-cred-title {
+    margin: 0 0 1.2rem;
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: 1.6rem;
+  }
+  .tm-cred-body { display: grid; gap: 0.6rem; }
+  .tm-cred-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 0.6rem;
+    border-bottom: 1px dashed rgba(17,17,17,0.18);
+    padding-bottom: 0.4rem;
+  }
+  .label {
+    font-family: var(--font-accent);
+    text-transform: uppercase;
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    color: var(--ink-soft);
+  }
+  .value { font-family: var(--font-display); font-size: 1rem; }
+  .value.big { font-size: 1.05rem; }
+  .recovery .value { color: var(--accent); }
+  .tm-cred-foot { margin-top: 1rem; }
+  .tm-cred-actions { display: flex; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 0.6rem; }
+  .warning {
+    margin: 0;
+    padding: 0.6rem 0.7rem;
+    background: rgba(217,72,95,0.08);
+    border-left: 3px solid var(--accent);
+    font-size: 0.88rem;
+  }
+  .hint { color: var(--ink-soft); font-size: 0.9rem; }
+
+  .email-section { max-width: 520px; }
+  .email-form { display: grid; gap: 0.7rem; margin-top: 0.5rem; }
+  .email-form input[type="email"] {
+    padding: 0.6rem 0.7rem;
+    border: 1.5px solid rgba(17,17,17,0.6);
+    border-radius: 3px;
+    background: rgba(255,255,255,0.8);
+    font-family: var(--font-body);
+    font-size: 1rem;
+  }
+  .prefs {
+    border: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 0.3rem;
+  }
+  .prefs legend { margin-bottom: 0.4rem; }
+  .check { display: flex; gap: 0.5rem; align-items: center; font-size: 0.92rem; }
+  .feedback { margin: 0; font-size: 0.9rem; color: var(--ink-soft); }
+  .feedback.error { color: var(--accent); }
+  .feedback.ok { color: #2d6a3f; }
+
+  .tm-return { margin-top: 1.5rem; }
+  .tm-return a {
+    font-family: var(--font-accent);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-size: 0.82rem;
+    color: var(--ink-soft);
+    text-decoration: none;
+  }
+  .tm-return a:hover { color: var(--accent); }
+</style>

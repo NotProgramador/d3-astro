@@ -1,0 +1,225 @@
+---
+// Renderiza el contenido de una familia según su content_type.
+// En esta sesión: FAMILY-A ('dialogue') funcional; B y C con placeholder.
+
+export interface Props {
+  contentType: string | null;
+  content: Record<string, any>;
+  familyName: string;
+  imageUrl: string | null;
+  progress?: { discovered: number; total: number; completed: boolean } | null;
+}
+const { contentType, content, familyName, imageUrl, progress } = Astro.props;
+---
+
+<section class="node-content paper-card">
+  <header class="node-head">
+    <p class="eyebrow">aparición encontrada</p>
+    <h2>{familyName}</h2>
+    {progress && (
+      <p class="mini-progress">
+        {progress.discovered} de {progress.total} apariciones
+        {progress.completed && <span class="badge">familia completada</span>}
+      </p>
+    )}
+  </header>
+
+  {contentType === 'dialogue' && (
+    <div class="dialogue-block">
+      {imageUrl && (
+        <img src={imageUrl} alt="Tinta" class="tinta-img" />
+      )}
+      <div class="speech">
+        <p id="tm-dialogue-text" class="speech-text">
+          {(content?.dialogues?.[0] ?? '…')}
+        </p>
+        <button
+          type="button"
+          id="tm-dialogue-next"
+          class="speech-next"
+          data-lines={JSON.stringify(content?.dialogues ?? [])}
+        >
+          Siguiente
+        </button>
+      </div>
+      {content?.tutorial && (
+        <details class="tutorial">
+          <summary>Ver tutorial: {content.tutorial.title}</summary>
+          <ol>
+            {(content.tutorial.steps ?? []).map((s: string) => <li>{s}</li>)}
+          </ol>
+        </details>
+      )}
+    </div>
+  )}
+
+  {contentType === 'tips' && (
+    <div class="tips-block">
+      <ul class="tips-list">
+        {(content?.tips ?? []).map((t: string) => <li>{t}</li>)}
+      </ul>
+      {content?.vignette && (
+        <p class="placeholder"><em>Viñeta:</em> {content.vignette}</p>
+      )}
+      {content?.exercise && (
+        <div class="exercise">
+          <p class="ex-label">Ejercicio</p>
+          <p>{content.exercise}</p>
+        </div>
+      )}
+    </div>
+  )}
+
+  {contentType === 'dynamic' && (
+    <div class="dynamic-block">
+      <div class="stain-placeholder" aria-hidden="true">◍</div>
+      <p class="placeholder">{content?.stain ?? ''}</p>
+      {content?.challenge && (
+        <div class="exercise">
+          <p class="ex-label">Reto</p>
+          <p>{content.challenge}</p>
+        </div>
+      )}
+    </div>
+  )}
+
+  {!['dialogue','tips','dynamic'].includes(contentType ?? '') && (
+    <p class="placeholder">Contenido aún no disponible para esta familia.</p>
+  )}
+</section>
+
+<script>
+  const btn = document.getElementById('tm-dialogue-next') as HTMLButtonElement | null;
+  const text = document.getElementById('tm-dialogue-text');
+  if (btn && text) {
+    let lines: string[] = [];
+    try { lines = JSON.parse(btn.dataset.lines ?? '[]'); } catch {}
+    let i = 0;
+    btn.addEventListener('click', () => {
+      i = (i + 1) % Math.max(lines.length, 1);
+      text.textContent = lines[i] ?? '';
+    });
+  }
+</script>
+
+<style>
+  .node-content { max-width: 780px; }
+  .eyebrow {
+    margin: 0 0 0.3rem;
+    font-family: var(--font-accent);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--accent);
+  }
+  .node-head h2 { margin: 0 0 0.4rem; font-size: 1.8rem; }
+  .mini-progress {
+    margin: 0 0 1rem;
+    font-family: var(--font-accent);
+    font-size: 0.82rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+  }
+  .badge {
+    background: var(--accent);
+    color: #fff;
+    padding: 0.15rem 0.5rem;
+    border-radius: 999px;
+    font-size: 0.7rem;
+    letter-spacing: 0.06em;
+  }
+  .dialogue-block {
+    display: grid;
+    grid-template-columns: 120px 1fr;
+    gap: 1rem;
+    align-items: start;
+  }
+  .tinta-img {
+    width: 120px;
+    height: auto;
+    transform: rotate(-3deg);
+  }
+  .speech {
+    background: rgba(255,255,255,0.7);
+    border: 1.5px solid rgba(17,17,17,0.6);
+    border-radius: 12px;
+    padding: 1rem;
+    position: relative;
+  }
+  .speech::before {
+    content: "";
+    position: absolute;
+    left: -10px;
+    top: 22px;
+    width: 0;
+    height: 0;
+    border-top: 8px solid transparent;
+    border-bottom: 8px solid transparent;
+    border-right: 10px solid rgba(17,17,17,0.6);
+  }
+  .speech-text {
+    margin: 0 0 0.8rem;
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: 1.1rem;
+    line-height: 1.5;
+  }
+  .speech-next {
+    padding: 0.4rem 0.8rem;
+    border: 1.5px solid var(--ink);
+    background: rgba(255,255,255,0.9);
+    border-radius: 3px;
+    font-family: var(--font-accent);
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+  }
+  .tutorial {
+    margin-top: 1rem;
+    background: rgba(255,255,255,0.55);
+    border: 1px dashed rgba(17,17,17,0.35);
+    border-radius: 3px;
+    padding: 0.6rem 0.9rem;
+  }
+  .tutorial summary { cursor: pointer; font-weight: 700; }
+  .tutorial ol { margin: 0.6rem 0 0.2rem 1.2rem; line-height: 1.7; }
+  .tips-list { margin: 0.4rem 0 1rem 1.1rem; line-height: 1.7; }
+  .placeholder {
+    color: var(--ink-soft);
+    font-style: italic;
+    margin: 0.4rem 0;
+  }
+  .exercise {
+    margin-top: 0.8rem;
+    padding: 0.7rem 0.9rem;
+    background: rgba(217,72,95,0.08);
+    border-left: 3px solid var(--accent);
+  }
+  .ex-label {
+    margin: 0 0 0.2rem;
+    font-family: var(--font-accent);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.72rem;
+    color: var(--accent);
+  }
+  .stain-placeholder {
+    font-size: 5rem;
+    line-height: 1;
+    text-align: center;
+    margin: 1rem 0;
+    color: var(--ink);
+  }
+
+  @media (max-width: 640px) {
+    .dialogue-block { grid-template-columns: 1fr; }
+    .tinta-img { width: 90px; }
+  }
+</style>

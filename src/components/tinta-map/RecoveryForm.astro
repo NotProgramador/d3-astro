@@ -1,0 +1,102 @@
+---
+---
+<section class="tm-recovery">
+  <div class="rec-card paper-card">
+    <p class="eyebrow">con código</p>
+    <h2>Recuperar por código</h2>
+    <p class="hint">Introduce tu código de recuperación con el formato D3-XXXX-XXXX-XXXX.</p>
+    <form id="tm-recover-code-form" class="rec-form">
+      <label>
+        <span class="label">Código</span>
+        <input
+          name="recovery_code"
+          type="text"
+          required
+          minlength="6"
+          maxlength="32"
+          autocomplete="off"
+          spellcheck="false"
+          placeholder="D3-XXXX-XXXX-XXXX"
+        />
+      </label>
+      <button type="submit" class="btn-primary">Recuperar</button>
+      <p class="feedback" data-target="code-feedback" aria-live="polite"></p>
+    </form>
+  </div>
+
+  <div class="rec-card paper-card">
+    <p class="eyebrow">con correo</p>
+    <h2>Recuperar por correo</h2>
+    <p class="hint">
+      Escribe el correo asociado a tu credencial. La respuesta es siempre
+      neutral por privacidad.
+    </p>
+    <form id="tm-recover-email-form" class="rec-form">
+      <label>
+        <span class="label">Correo</span>
+        <input
+          name="email"
+          type="email"
+          required
+          autocomplete="email"
+          placeholder="tu@correo.com"
+        />
+      </label>
+      <button type="submit" class="btn-primary">Enviar</button>
+      <p class="feedback" data-target="email-feedback" aria-live="polite"></p>
+    </form>
+  </div>
+</section>
+
+<style>
+  .tm-recovery {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+  .rec-card { max-width: 100%; }
+  .eyebrow {
+    margin: 0 0 0.4rem;
+    font-family: var(--font-accent);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--accent);
+  }
+  .hint { color: var(--ink-soft); font-size: 0.92rem; }
+  .rec-form { display: grid; gap: 0.7rem; }
+  .rec-form label { display: grid; gap: 0.3rem; }
+  .label {
+    font-family: var(--font-accent);
+    text-transform: uppercase;
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    color: var(--ink-soft);
+  }
+  .rec-form input {
+    padding: 0.6rem 0.7rem;
+    border: 1.5px solid rgba(17,17,17,0.6);
+    border-radius: 3px;
+    background: rgba(255,255,255,0.8);
+    font-family: var(--font-body);
+    font-size: 1rem;
+  }
+  .btn-primary {
+    justify-self: start;
+    padding: 0.65rem 1rem;
+    border: 1.5px solid var(--ink);
+    border-radius: 3px;
+    background: rgba(255,255,255,0.8);
+    cursor: pointer;
+    font-weight: 700;
+    box-shadow: 4px 4px 0 #11111140;
+  }
+  .feedback { margin: 0; font-size: 0.9rem; color: var(--ink-soft); }
+  .feedback.error { color: var(--accent); }
+  .feedback.ok { color: #2d6a3f; }
+
+  @media (max-width: 720px) {
+    .tm-recovery { grid-template-columns: 1fr; }
+  }
+</style>
