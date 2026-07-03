@@ -9,3 +9,5 @@ dist
 /private/
 *.node-keys.csv
 supabase/.env.local
+
+.claude/
