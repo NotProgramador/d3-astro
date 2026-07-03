@@ -1,0 +1,603 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import RecoveryEmailStatus from '../../../components/tinta-map/RecoveryEmailStatus.astro';
+import NodeReward from '../../../components/tinta-map/NodeReward.astro';
+---
+
+<BaseLayout title="Mi credencial — Tinta estuvo aquí">
+  <section class="cred-hero">
+    <p class="eyebrow">tinta estuvo aquí</p>
+    <h1>Mi credencial</h1>
+    <p class="hero-phrase">"guarda esto: es tu manera de volver."</p>
+  </section>
+
+  <!-- 1. Credencial de explorador -->
+  <div id="tm-cred-slot" data-hydrating>
+    <section class="paper-card empty" data-empty>
+      <p class="eyebrow">cargando</p>
+      <p class="hint">Consultando tu credencial…</p>
+    </section>
+  </div>
+
+  <!-- 2. Código de recuperación (oculto por default, sólo en modo privado) -->
+  <section id="tm-recovery-block" class="paper-card rec-code-section" hidden>
+    <p class="eyebrow">código de recuperación</p>
+    <h2>Tu llave para volver</h2>
+    <p class="hint">
+      Este código permite restaurar tu recorrido en otro dispositivo o si
+      pierdes el actual. Guárdalo en un lugar seguro.
+    </p>
+    <div class="rec-code-row">
+      <code id="tm-recovery-code" class="rec-code masked" aria-label="código de recuperación">D3-••••-••••-••••</code>
+      <button type="button" id="tm-recovery-toggle" class="btn-line">Mostrar</button>
+      <button type="button" id="tm-recovery-copy" class="btn-line">Copiar</button>
+    </div>
+    <p class="warning">
+      No compartas este código. Permite recuperar tu recorrido.
+    </p>
+  </section>
+
+  <!-- 3. Correo de recuperación (bloque completo, hidden hasta que haya perfil) -->
+  <div id="tm-email-block" hidden>
+    <RecoveryEmailStatus>
+      <form slot="add-form" id="tm-email-add-form" class="email-form" novalidate>
+        <label>
+          <span class="label">Correo</span>
+          <input name="email" type="email" required autocomplete="email" placeholder="tu@correo.com" />
+        </label>
+        <fieldset class="prefs">
+          <legend class="label">Suscripciones opcionales</legend>
+          <label class="check"><input type="checkbox" name="clue_emails" /> Quiero recibir pistas ocasionales de nuevos nodos</label>
+          <label class="check"><input type="checkbox" name="event_emails" /> Quiero enterarme de sesiones y actividades</label>
+          <label class="check"><input type="checkbox" name="project_news" /> Quiero recibir novedades de Domingos de Dibujar</label>
+        </fieldset>
+        <button type="submit" class="btn-primary">Guardar</button>
+        <p class="feedback" data-target="email-feedback" aria-live="polite"></p>
+      </form>
+
+      <form slot="change-form" id="tm-email-change-form" class="email-form compact" novalidate>
+        <label>
+          <span class="label">Nuevo correo</span>
+          <input name="email" type="email" required autocomplete="email" placeholder="nuevo@correo.com" />
+        </label>
+        <button type="submit" class="btn-primary">Reemplazar</button>
+        <p class="hint">
+          Al cambiar el correo tendrás que volver a confirmarlo. Tu credencial,
+          discoveries y recompensas se conservan.
+        </p>
+        <p class="feedback" data-target="change-feedback" aria-live="polite"></p>
+      </form>
+    </RecoveryEmailStatus>
+  </div>
+
+  <!-- 4. Recompensas desbloqueadas -->
+  <section id="tm-claims-section" hidden>
+    <p class="eyebrow">recompensas desbloqueadas</p>
+    <h2>Guarda estos códigos</h2>
+    <div id="tm-claims-list" class="claims-list"></div>
+  </section>
+
+  <!-- 5. Acciones -->
+  <nav class="tm-actions-nav" aria-label="Acciones de la credencial">
+    <a href="/tinta/tintamap" class="btn-line">← Volver al índice</a>
+    <a href="/tinta/tintamap" class="btn-primary">Seguir explorando</a>
+  </nav>
+</BaseLayout>
+
+<script>
+  import {
+    hasStoredDeviceToken,
+    getStoredPublicId,
+    getStoredRecoveryCode, setStoredRecoveryCode,
+    getStoredCreatedAt, setStoredCreatedAt, setStoredPublicId,
+    getCachedProgress, setCachedProgress,
+    getCachedRecoveryState, setCachedRecoveryState,
+    getCachedClaims, setCachedClaims,
+  } from '../../../lib/tintamap-storage.ts';
+  import { createExplorer, probeExplorer, attachRecoveryEmail } from '../../../lib/tintamap-api.ts';
+
+  type RecoveryStatus = 'none' | 'pending' | 'verified';
+  interface ProfileState {
+    profile: { public_id: string; created_at?: string } | null;
+    progress: { discovered_count: number; families: any[] } | null;
+    has_recovery_email: boolean;
+    masked_email: string | null;
+    email_verified: boolean;
+    recovery_status: RecoveryStatus;
+  }
+
+  const slot = document.getElementById('tm-cred-slot')!;
+  const emailBlock = document.getElementById('tm-email-block')!;
+  const recoveryBlock = document.getElementById('tm-recovery-block')!;
+  const claimsSection = document.getElementById('tm-claims-section')!;
+  const claimsList = document.getElementById('tm-claims-list')!;
+
+  function renderEmpty() {
+    hideAllExtras();
+    slot.dataset.hydrating = '';
+    slot.innerHTML = `
+      <section class="paper-card empty">
+        <p class="eyebrow">todavía sin credencial</p>
+        <h2>Aún no has creado tu credencial</h2>
+        <p>Se generará automáticamente cuando escanees tu primer nodo.
+           Si ya tenías una, puedes recuperarla.</p>
+        <p class="actions">
+          <a href="/tinta/tintamap/recuperar" class="btn-line">Recuperar mi credencial</a>
+          <button type="button" id="tm-create-now" class="btn-line">Crear una ahora</button>
+        </p>
+      </section>
+    `;
+    const btn = document.getElementById('tm-create-now') as HTMLButtonElement | null;
+    btn?.addEventListener('click', async () => {
+      btn.disabled = true; btn.textContent = 'Creando…';
+      try {
+        const res: any = await createExplorer();
+        if (res?.ok && res.credentials) {
+          setStoredPublicId(res.credentials.public_id);
+          setStoredRecoveryCode(res.credentials.recovery_code);
+          setStoredCreatedAt(new Date().toISOString());
+          hydrateFromBackend(res);
+        } else if (res?.ok && res.already_exists && res.profile) {
+          setStoredPublicId(res.profile.public_id);
+          if (res.profile.created_at) setStoredCreatedAt(res.profile.created_at);
+          hydrateFromBackend(res);
+        } else {
+          btn.textContent = 'No se pudo. Intenta más tarde';
+        }
+      } catch { btn.textContent = 'Error de conexión'; }
+    });
+  }
+
+  function hideAllExtras() {
+    emailBlock.hidden = true;
+    recoveryBlock.hidden = true;
+    claimsSection.hidden = true;
+  }
+
+  function renderCredential(state: ProfileState) {
+    if (!state.profile) { renderEmpty(); return; }
+    delete slot.dataset.hydrating;
+
+    const publicId = state.profile.public_id;
+    const created = state.profile.created_at ?? getStoredCreatedAt();
+    const progress = state.progress ?? getCachedProgress();
+    const familiesStarted = (progress?.families ?? []).filter((f: any) => f.discovered > 0).length;
+    const familiesCompleted = (progress?.families ?? []).filter((f: any) => f.completed).length;
+
+    slot.innerHTML = `
+      <article class="tm-cred paper-card">
+        <header class="tm-cred-head">
+          <p class="eyebrow">credencial de explorador</p>
+          <h2 class="tm-cred-title">Tinta estuvo aquí</h2>
+        </header>
+        <div class="tm-cred-body">
+          <div class="tm-cred-row"><span class="label">ID público</span><code class="value">${escapeHtml(publicId)}</code></div>
+          <div class="tm-cred-row"><span class="label">Nodos encontrados</span><span class="value">${progress?.discovered_count ?? 0}</span></div>
+          <div class="tm-cred-row"><span class="label">Familias iniciadas</span><span class="value">${familiesStarted}</span></div>
+          <div class="tm-cred-row"><span class="label">Familias completadas</span><span class="value">${familiesCompleted}</span></div>
+          ${created ? `<div class="tm-cred-row"><span class="label">Creada</span><span class="value">${escapeHtml(new Date(created).toLocaleDateString())}</span></div>` : ''}
+        </div>
+      </article>
+    `;
+
+    // Bloque de código de recuperación (sólo si está guardado localmente).
+    const recovery = getStoredRecoveryCode();
+    recoveryBlock.hidden = !recovery;
+    if (recovery) wireRecoveryCode(recovery);
+
+    // Estado de correo
+    renderEmailStatus(state);
+  }
+
+  function wireRecoveryCode(recovery: string) {
+    const codeEl = document.getElementById('tm-recovery-code')!;
+    const toggle = document.getElementById('tm-recovery-toggle') as HTMLButtonElement;
+    const copy = document.getElementById('tm-recovery-copy') as HTMLButtonElement;
+
+    codeEl.textContent = 'D3-••••-••••-••••';
+    codeEl.classList.add('masked');
+    toggle.textContent = 'Mostrar';
+
+    toggle.onclick = () => {
+      const shown = !codeEl.classList.contains('masked');
+      if (shown) {
+        codeEl.textContent = 'D3-••••-••••-••••';
+        codeEl.classList.add('masked');
+        toggle.textContent = 'Mostrar';
+      } else {
+        codeEl.textContent = recovery;
+        codeEl.classList.remove('masked');
+        toggle.textContent = 'Ocultar';
+      }
+    };
+    copy.onclick = async () => {
+      try {
+        await navigator.clipboard.writeText(recovery);
+        const t = copy.textContent;
+        copy.textContent = '¡Copiado!';
+        setTimeout(() => { copy.textContent = t; }, 1400);
+      } catch {}
+    };
+  }
+
+  function renderEmailStatus(state: ProfileState) {
+    emailBlock.hidden = false;
+    const root = emailBlock.querySelector<HTMLElement>('[data-slot="root"]')!;
+    root.dataset.state = state.recovery_status;
+    root.querySelector<HTMLElement>('[data-slot="pane-none"]')!.hidden     = state.recovery_status !== 'none';
+    root.querySelector<HTMLElement>('[data-slot="pane-pending"]')!.hidden  = state.recovery_status !== 'pending';
+    root.querySelector<HTMLElement>('[data-slot="pane-verified"]')!.hidden = state.recovery_status !== 'verified';
+    if (state.masked_email) {
+      root.querySelectorAll<HTMLElement>('[data-slot="masked_email"]').forEach((el) => {
+        el.textContent = state.masked_email!;
+      });
+    }
+  }
+
+  function renderClaims(claims: any[]) {
+    if (!claims || claims.length === 0) {
+      claimsSection.hidden = true;
+      claimsList.innerHTML = '';
+      return;
+    }
+    claimsSection.hidden = false;
+    claimsList.innerHTML = '';
+    for (const c of claims) {
+      const card = document.createElement('article');
+      card.className = 'node-reward';
+      card.dataset.variant = 'repeat';
+      card.innerHTML = `
+        <div class="ribbon" aria-hidden="true">★</div>
+        <p class="eyebrow">recompensa desbloqueada</p>
+        <h3>${escapeHtml(c.family_name ?? c.family_id)}</h3>
+        <p class="lede">Guardado en tu credencial.</p>
+        <p class="prize"><span class="label">Recompensa</span><strong>${escapeHtml(c.reward_name)}</strong></p>
+        <div class="claim-box">
+          <span class="label">Código de reclamo</span>
+          <code class="claim-code">${escapeHtml(c.claim_code)}</code>
+          <button type="button" class="btn-copy" data-copy="${escapeHtml(c.claim_code)}">Copiar código</button>
+        </div>
+        <p class="note">Guarda este código. Podrás presentarlo cuando se anuncie el punto de entrega.</p>
+      `;
+      claimsList.appendChild(card);
+    }
+    claimsList.querySelectorAll<HTMLButtonElement>('[data-copy]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(btn.dataset.copy ?? '');
+          const t = btn.textContent;
+          btn.textContent = '¡Copiado!';
+          setTimeout(() => { btn.textContent = t; }, 1400);
+        } catch {}
+      });
+    });
+  }
+
+  function hydrateFromBackend(res: any) {
+    const state: ProfileState = {
+      profile: res.profile ?? null,
+      progress: res.progress ?? null,
+      has_recovery_email: !!res.has_recovery_email,
+      masked_email: res.masked_email ?? null,
+      email_verified: !!res.email_verified,
+      recovery_status: (res.recovery_status ?? 'none') as RecoveryStatus,
+    };
+    if (state.profile) {
+      setStoredPublicId(state.profile.public_id);
+      if (state.profile.created_at) setStoredCreatedAt(state.profile.created_at);
+    }
+    if (state.progress) setCachedProgress({ discovered_count: state.progress.discovered_count, families: state.progress.families });
+    setCachedRecoveryState({
+      recovery_status: state.recovery_status,
+      has_recovery_email: state.has_recovery_email,
+      masked_email: state.masked_email,
+      email_verified: state.email_verified,
+      preferences: res.preferences ?? null,
+    });
+    if (Array.isArray(res.claims)) {
+      setCachedClaims(res.claims.map((c: any) => ({
+        family_id: c.family_id,
+        family_name: c.family_name,
+        reward_name: c.reward_name,
+        claim_code: c.claim_code,
+        status: c.status,
+      })));
+    }
+    renderCredential(state);
+    renderClaims(res.claims ?? getCachedClaims());
+  }
+
+  async function initial() {
+    if (!hasStoredDeviceToken()) { renderEmpty(); return; }
+
+    const cachedPublic = getStoredPublicId();
+    const cachedRecState = getCachedRecoveryState();
+    if (cachedPublic) {
+      renderCredential({
+        profile: { public_id: cachedPublic, created_at: getStoredCreatedAt() ?? undefined },
+        progress: getCachedProgress(),
+        has_recovery_email: !!cachedRecState?.has_recovery_email,
+        masked_email: cachedRecState?.masked_email ?? null,
+        email_verified: !!cachedRecState?.email_verified,
+        recovery_status: cachedRecState?.recovery_status ?? 'none',
+      });
+      renderClaims(getCachedClaims());
+    }
+
+    try {
+      const res: any = await probeExplorer();
+      if (res?.ok && res.already_exists && res.profile) hydrateFromBackend(res);
+      else if (res?.ok && res.already_exists === false) renderEmpty();
+    } catch { /* mantener cache local */ }
+  }
+
+  // --- Formularios de correo ---
+  document.getElementById('tm-email-add-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const form = e.currentTarget as HTMLFormElement;
+    const email = (form.elements.namedItem('email') as HTMLInputElement).value.trim().toLowerCase();
+    const prefs = {
+      clue_emails: (form.elements.namedItem('clue_emails') as HTMLInputElement).checked,
+      event_emails: (form.elements.namedItem('event_emails') as HTMLInputElement).checked,
+      project_news: (form.elements.namedItem('project_news') as HTMLInputElement).checked,
+    };
+    await submitEmail(email, prefs, 'email-feedback', false);
+  });
+  document.getElementById('tm-email-change-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const form = e.currentTarget as HTMLFormElement;
+    const email = (form.elements.namedItem('email') as HTMLInputElement).value.trim().toLowerCase();
+    if (!window.confirm('¿Reemplazar el correo de recuperación por este nuevo?')) return;
+    const cached = getCachedRecoveryState();
+    await submitEmail(email, cached?.preferences ?? {}, 'change-feedback', true);
+  });
+
+  async function submitEmail(email: string, prefs: any, feedbackTarget: string, isReplace: boolean) {
+    setFeedback(feedbackTarget, 'Guardando…');
+    try {
+      const res: any = await attachRecoveryEmail(email, prefs, { confirm_replace: isReplace });
+      if (res?.ok) {
+        setCachedRecoveryState({
+          recovery_status: res.recovery_status,
+          has_recovery_email: !!res.has_recovery_email,
+          masked_email: res.masked_email ?? null,
+          email_verified: !!res.email_verified,
+          preferences: prefs ?? null,
+        });
+        setFeedback(feedbackTarget, isReplace ? 'Correo reemplazado. Confirma en tu bandeja.' : 'Guardado. Te enviamos un correo (o quedó en cola).', 'ok');
+        const p = getStoredPublicId();
+        if (p) renderEmailStatus({
+          profile: { public_id: p },
+          progress: getCachedProgress(),
+          has_recovery_email: !!res.has_recovery_email,
+          masked_email: res.masked_email ?? null,
+          email_verified: !!res.email_verified,
+          recovery_status: res.recovery_status,
+        });
+      } else if (res?.kind === 'needs_confirmation') {
+        setFeedback(feedbackTarget, res.body ?? 'Se necesita confirmación explícita.', 'error');
+      } else {
+        setFeedback(feedbackTarget, res?.body ?? res?.error ?? 'No pudimos guardar.', 'error');
+      }
+    } catch {
+      setFeedback(feedbackTarget, 'Sin conexión con Tinta.', 'error');
+    }
+  }
+
+  function setFeedback(target: string, msg: string, kind: 'ok' | 'error' | '' = '') {
+    const el = document.querySelector<HTMLElement>(`[data-target="${target}"]`);
+    if (!el) return;
+    el.className = 'feedback' + (kind ? ` ${kind}` : '');
+    el.textContent = msg;
+  }
+
+  function escapeHtml(s: string): string {
+    return s.replace(/[&<>"']/g, (c) => ({
+      '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;',
+    } as any)[c]);
+  }
+
+  initial();
+</script>
+
+<style>
+  .cred-hero { max-width: 680px; margin-bottom: 1.4rem; }
+  .eyebrow {
+    margin: 0 0 0.5rem;
+    font-family: var(--font-accent);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--accent);
+  }
+  .cred-hero h1 { margin: 0 0 0.6rem; font-size: clamp(2rem, 5vw, 3.2rem); }
+  .hero-phrase {
+    font-family: var(--font-display);
+    font-style: italic;
+    color: var(--ink-soft);
+    margin: 0;
+  }
+
+  /* --- 1. Credencial --- */
+  .tm-cred { max-width: 520px; margin-bottom: 1.2rem; }
+  .tm-cred-title {
+    margin: 0 0 1.2rem;
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: 1.55rem;
+  }
+  .tm-cred-body { display: grid; gap: 0.6rem; }
+  .tm-cred-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 0.6rem;
+    border-bottom: 1px dashed rgba(17,17,17,0.18);
+    padding-bottom: 0.4rem;
+  }
+  .label {
+    font-family: var(--font-accent);
+    text-transform: uppercase;
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    color: var(--ink-soft);
+  }
+  .value { font-family: var(--font-display); font-size: 1rem; }
+
+  .empty { max-width: 520px; }
+  .empty h2 { margin: 0 0 0.5rem; }
+  .actions { display: flex; gap: 0.55rem; flex-wrap: wrap; margin-top: 0.8rem; }
+  [data-hydrating] .empty { opacity: 0.65; }
+
+  /* --- 2. Código de recuperación --- */
+  .rec-code-section { max-width: 520px; margin-bottom: 1.2rem; }
+  .rec-code-section h2 { margin: 0 0 0.4rem; font-size: 1.15rem; }
+  .rec-code-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin: 0.7rem 0 0.5rem;
+    padding: 0.65rem 0.8rem;
+    background: rgba(255,255,255,0.6);
+    border: 1px dashed rgba(17,17,17,0.28);
+  }
+  .rec-code {
+    font-family: var(--font-display);
+    font-size: 1.05rem;
+    color: var(--accent);
+    letter-spacing: 0.05em;
+    word-break: break-all;
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  .rec-code.masked { color: var(--ink-soft); letter-spacing: 0.1em; }
+  .warning {
+    margin: 0.4rem 0 0;
+    padding: 0.55rem 0.7rem;
+    background: rgba(217,72,95,0.08);
+    border-left: 3px solid var(--accent);
+    font-size: 0.88rem;
+  }
+
+  /* --- 4. Recompensas --- */
+  #tm-claims-section { max-width: 620px; margin: 1rem 0; }
+  #tm-claims-section h2 { margin: 0.15rem 0 0.9rem; font-size: 1.3rem; }
+  .claims-list { display: grid; gap: 1rem; }
+  /* Reutiliza estilos de NodeReward pintados con las mismas clases */
+  #tm-claims-section .node-reward {
+    position: relative;
+    padding: 1.15rem 1.05rem 0.95rem;
+    background:
+      linear-gradient(0deg, rgba(217,72,95,0.06), rgba(217,72,95,0.06)),
+      var(--card-bg);
+    border: 1.5px solid var(--card-border);
+    border-radius: var(--card-radius);
+    box-shadow: 4px 4px 0 #11111133;
+    overflow: hidden;
+  }
+  #tm-claims-section .ribbon {
+    position: absolute; top: -12px; right: -12px;
+    width: 36px; height: 36px;
+    background: var(--ink-soft);
+    color: #fff;
+    border-radius: 50%;
+    display: grid; place-items: center;
+    font-size: 1.1rem; transform: rotate(-12deg);
+    box-shadow: 2px 2px 0 rgba(17,17,17,0.2);
+  }
+  #tm-claims-section h3 { margin: 0 0 0.3rem; font-family: var(--font-display); font-size: 1.2rem; }
+  #tm-claims-section .lede { margin: 0 0 0.6rem; font-size: 0.95rem; color: var(--ink); }
+  #tm-claims-section .prize {
+    margin: 0 0 0.6rem;
+    padding: 0.45rem 0.65rem;
+    background: rgba(255,255,255,0.6);
+    border: 1px dashed rgba(17,17,17,0.28);
+    display: grid; gap: 0.15rem;
+  }
+  #tm-claims-section .prize strong { font-family: var(--font-display); font-size: 1.05rem; }
+  #tm-claims-section .claim-box {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 0.4rem 0.6rem;
+    padding: 0.65rem 0.8rem;
+    background: rgba(217,72,95,0.1);
+    border-left: 3px solid var(--accent);
+    margin: 0 0 0.55rem;
+  }
+  #tm-claims-section .claim-box .label { grid-column: 1 / -1; }
+  #tm-claims-section .claim-code {
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    color: var(--accent);
+    letter-spacing: 0.04em;
+    word-break: break-all;
+    overflow-wrap: anywhere;
+    min-width: 0;
+  }
+  #tm-claims-section .btn-copy {
+    padding: 0.42rem 0.75rem;
+    border: 1.5px solid var(--ink);
+    background: rgba(255,255,255,0.9);
+    border-radius: 3px;
+    font-family: var(--font-accent);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  #tm-claims-section .note { margin: 0; color: var(--ink-soft); font-size: 0.85rem; }
+
+  /* --- Botones y forms --- */
+  .btn-primary, .btn-line {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.55rem 0.9rem;
+    border: 1.5px solid var(--ink);
+    border-radius: 3px;
+    background: rgba(255,255,255,0.75);
+    color: var(--ink);
+    text-decoration: none;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: var(--font-body);
+  }
+  .btn-primary { background: rgba(255,255,255,0.92); box-shadow: 4px 4px 0 #11111133; font-weight: 700; }
+
+  .email-form { display: grid; gap: 0.7rem; margin-top: 0.5rem; }
+  .email-form.compact { gap: 0.5rem; }
+  .email-form input[type="email"] {
+    padding: 0.6rem 0.7rem;
+    border: 1.5px solid rgba(17,17,17,0.6);
+    border-radius: 3px;
+    background: rgba(255,255,255,0.85);
+    font-family: var(--font-body);
+    font-size: 1rem;
+  }
+  .prefs { border: none; padding: 0; margin: 0; display: grid; gap: 0.3rem; }
+  .prefs legend { margin-bottom: 0.4rem; }
+  .check { display: flex; gap: 0.5rem; align-items: center; font-size: 0.92rem; }
+  .feedback { margin: 0; font-size: 0.9rem; color: var(--ink-soft); }
+  .feedback.error { color: var(--accent); }
+  .feedback.ok { color: #2d6a3f; }
+
+  .hint { color: var(--ink-soft); font-size: 0.92rem; margin: 0.2rem 0 0; }
+
+  .tm-actions-nav {
+    display: flex;
+    gap: 0.55rem;
+    flex-wrap: wrap;
+    margin-top: 1.6rem;
+  }
+
+  @media (max-width: 480px) {
+    .rec-code-row { padding: 0.55rem 0.7rem; }
+    .btn-primary, .btn-line { padding: 0.55rem 0.75rem; font-size: 0.9rem; }
+    .tm-actions-nav .btn-primary,
+    .tm-actions-nav .btn-line { flex: 1 1 auto; }
+  }
+</style>

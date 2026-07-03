@@ -4,3 +4,10 @@ dist
 .env
 .env.*
 .DS_Store
+
+# Tinta estuvo aquí — inventario privado de keys NFC (dev y prod)
+/private/
+*.node-keys.csv
+supabase/.env.local
+
+.claude/

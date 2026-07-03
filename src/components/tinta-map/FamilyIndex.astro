@@ -1,0 +1,143 @@
+---
+// Índice visual de familias. Los nodos NO descubiertos se pintan como
+// bloqueados (?) y no revelan ubicación ni key. Los descubiertos usan
+// datos cacheados de progreso (localStorage) o hidratados con progreso
+// real cuando la página carga.
+//
+// La lista de familias viene de node_families (pública, is_active=true).
+// Este componente es Astro puro: pinta el shell y un script cliente
+// rellena estado desde localStorage al montar.
+
+interface Family {
+  id: string;
+  name: string;
+  description: string | null;
+  symbol: string | null;
+}
+export interface Props {
+  families: Family[];
+  placementsPerFamily?: number;
+}
+const { families, placementsPerFamily = 3 } = Astro.props;
+---
+
+<section class="tm-families" data-per-family={placementsPerFamily}>
+  <p class="eyebrow">apariciones</p>
+  <h2>Índice de familias</h2>
+  <p class="section-intro">
+    Cada familia agrupa tres apariciones distintas. Cada nueva ubicación
+    cuenta como un descubrimiento independiente.
+  </p>
+
+  <div class="fam-grid">
+    {families.map((f) => (
+      <article class="fam-card paper-card" data-family={f.id}>
+        <div class="fam-head">
+          <span class="fam-symbol" aria-hidden="true">{f.symbol ?? '·'}</span>
+          <div>
+            <p class="sketch-label">familia {f.id.replace('FAMILY-', '')}</p>
+            <h3 class="fam-title">{f.name}</h3>
+          </div>
+        </div>
+        {f.description && <p class="fam-desc">{f.description}</p>}
+        <div class="fam-nodes">
+          {Array.from({ length: placementsPerFamily }).map((_, i) => {
+            const idx = String(i + 1).padStart(2, '0');
+            const pid = `${f.id.replace('FAMILY-', '')}-${idx}`;
+            return (
+              <div class="node-chip" data-placement={pid} data-state="locked">
+                <span class="node-mark" aria-hidden="true">?</span>
+                <span class="node-id">{pid}</span>
+              </div>
+            );
+          })}
+        </div>
+        <p class="fam-progress" data-family-progress={f.id}>
+          <span class="progress-num">0</span> de <span class="progress-total">{placementsPerFamily}</span> encontradas
+        </p>
+      </article>
+    ))}
+  </div>
+</section>
+
+<script>
+  import { getCachedProgress } from '../../lib/tintamap-storage.ts';
+  const progress = getCachedProgress();
+  if (progress) {
+    for (const fam of progress.families) {
+      const card = document.querySelector(`[data-family="${fam.family_id}"]`);
+      if (!card) continue;
+      const num = card.querySelector('.progress-num');
+      const total = card.querySelector('.progress-total');
+      if (num) num.textContent = String(fam.discovered);
+      if (total) total.textContent = String(fam.total);
+    }
+  }
+</script>
+
+<style>
+  .tm-families { margin: 2.4rem 0; }
+  .eyebrow {
+    margin: 0 0 0.5rem;
+    font-family: var(--font-accent);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--accent);
+  }
+  .fam-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin-top: 1.2rem;
+  }
+  .fam-card { display: flex; flex-direction: column; gap: 0.8rem; }
+  .fam-head { display: flex; align-items: flex-start; gap: 0.8rem; }
+  .fam-symbol {
+    font-size: 2.2rem;
+    line-height: 1;
+    display: inline-block;
+    transform: rotate(-4deg);
+  }
+  .fam-title { margin: 0.15rem 0 0; font-size: 1.2rem; }
+  .fam-desc {
+    margin: 0;
+    color: var(--ink-soft);
+    font-size: 0.95rem;
+    line-height: 1.55;
+  }
+  .fam-nodes { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+  .node-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.35rem 0.65rem;
+    border: 1.5px dashed rgba(17,17,17,0.35);
+    border-radius: 3px;
+    background: rgba(255,255,255,0.4);
+    font-family: var(--font-accent);
+    font-size: 0.8rem;
+    letter-spacing: 0.06em;
+    color: var(--ink-soft);
+  }
+  .node-chip[data-state="discovered"] {
+    border-style: solid;
+    border-color: var(--accent);
+    color: var(--ink);
+    background: rgba(217,72,95,0.08);
+  }
+  .node-mark { font-weight: 700; }
+  .fam-progress {
+    margin: 0;
+    font-family: var(--font-accent);
+    font-size: 0.82rem;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  @media (max-width: 900px) {
+    .fam-grid { grid-template-columns: 1fr; }
+  }
+</style>

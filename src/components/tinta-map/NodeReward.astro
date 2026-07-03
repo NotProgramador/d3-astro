@@ -1,0 +1,181 @@
+---
+/**
+ * NodeReward.astro
+ *
+ * Tarjeta editorial de recompensa. Se usa desde /nodo (cierre de loop)
+ * y desde /credencial (listado de claims).
+ *
+ * Los datos se rellenan en cliente. Estados:
+ *   variant="first"  → "Recompensa desbloqueada"
+ *   variant="repeat" → "Recompensa ya desbloqueada"
+ */
+export interface Props {
+  variant?: 'first' | 'repeat';
+  familyName?: string;
+  rewardName?: string;
+  claimCode?: string;
+}
+const {
+  variant = 'first',
+  familyName = '',
+  rewardName = '',
+  claimCode = '',
+} = Astro.props;
+const isFirst = variant === 'first';
+---
+
+<article class="node-reward" data-variant={variant}>
+  <div class="ribbon" aria-hidden="true">★</div>
+
+  <p class="eyebrow" data-slot="eyebrow">
+    {isFirst ? 'recompensa desbloqueada' : 'recompensa ya desbloqueada'}
+  </p>
+
+  <h3 data-slot="title">
+    {isFirst ? '¡Encontraste las tres apariciones!' : 'Ya habías desbloqueado esta recompensa'}
+  </h3>
+
+  <p class="lede" data-slot="lede">
+    {isFirst
+      ? <>Completaste las tres apariciones de <em data-slot="family_name">{familyName}</em>.</>
+      : <>Este código ya estaba guardado en tu credencial.</>}
+  </p>
+
+  <p class="prize">
+    <span class="label">Recompensa</span>
+    <strong data-slot="reward_name">{rewardName}</strong>
+  </p>
+
+  <div class="claim-box">
+    <span class="label">Código de reclamo</span>
+    <code class="claim-code" data-slot="claim_code">{claimCode}</code>
+    <button type="button" class="btn-copy" data-slot="copy-btn">Copiar código</button>
+  </div>
+
+  <p class="note">
+    Guarda este código. Podrás presentarlo cuando se anuncie el punto de entrega.
+  </p>
+</article>
+
+<style>
+  .node-reward {
+    position: relative;
+    max-width: 620px;
+    padding: 1.35rem 1.25rem 1.15rem;
+    background:
+      linear-gradient(0deg, rgba(217,72,95,0.06), rgba(217,72,95,0.06)),
+      var(--card-bg);
+    border: 1.5px solid var(--card-border);
+    border-radius: var(--card-radius);
+    box-shadow: 4px 4px 0 #11111140;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    overflow: hidden;
+  }
+  .ribbon {
+    position: absolute;
+    top: -14px;
+    right: -14px;
+    width: 42px;
+    height: 42px;
+    background: var(--accent);
+    color: #fff;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    font-size: 1.4rem;
+    transform: rotate(-12deg);
+    box-shadow: 2px 2px 0 rgba(17,17,17,0.2);
+  }
+  .node-reward[data-variant="repeat"] .ribbon { background: var(--ink-soft); }
+
+  .eyebrow {
+    margin: 0 0 0.3rem;
+    font-family: var(--font-accent);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--accent);
+  }
+  h3 {
+    margin: 0 0 0.55rem;
+    font-family: var(--font-display);
+    font-size: clamp(1.3rem, 4vw, 1.55rem);
+    line-height: 1.15;
+  }
+  .lede {
+    margin: 0 0 0.9rem;
+    color: var(--ink);
+    line-height: 1.55;
+    font-size: 0.98rem;
+  }
+  .prize {
+    margin: 0 0 0.9rem;
+    display: grid;
+    gap: 0.15rem;
+    padding: 0.5rem 0.7rem;
+    background: rgba(255,255,255,0.6);
+    border: 1px dashed rgba(17,17,17,0.28);
+    border-radius: 3px;
+  }
+  .label {
+    font-family: var(--font-accent);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.7rem;
+    color: var(--ink-soft);
+  }
+  .prize strong {
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    font-weight: 700;
+  }
+
+  .claim-box {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 0.4rem 0.6rem;
+    padding: 0.7rem 0.85rem;
+    background: rgba(217,72,95,0.1);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 3px 3px 0;
+    margin: 0 0 0.7rem;
+  }
+  .claim-box .label { grid-column: 1 / -1; }
+  .claim-code {
+    font-family: var(--font-display);
+    font-size: 1.15rem;
+    color: var(--accent);
+    letter-spacing: 0.04em;
+    word-break: break-all;
+    overflow-wrap: anywhere;
+    min-width: 0;
+  }
+  .btn-copy {
+    padding: 0.45rem 0.8rem;
+    border: 1.5px solid var(--ink);
+    background: rgba(255,255,255,0.9);
+    border-radius: 3px;
+    font-family: var(--font-accent);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .note {
+    margin: 0;
+    color: var(--ink-soft);
+    font-size: 0.86rem;
+    line-height: 1.55;
+  }
+
+  @media (max-width: 480px) {
+    .node-reward { padding: 1.1rem 0.95rem 0.95rem; }
+    .claim-box { grid-template-columns: 1fr; }
+    .btn-copy { justify-self: start; }
+    .ribbon { width: 34px; height: 34px; font-size: 1.1rem; top: -10px; right: -10px; }
+  }
+</style>

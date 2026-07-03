@@ -1,0 +1,448 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import DiscoveryModal from '../../../components/tinta-map/DiscoveryModal.astro';
+import NodeDialogue from '../../../components/tinta-map/NodeDialogue.astro';
+import NodeTutorial from '../../../components/tinta-map/NodeTutorial.astro';
+import NodeTips from '../../../components/tinta-map/NodeTips.astro';
+import NodeReward from '../../../components/tinta-map/NodeReward.astro';
+---
+
+<BaseLayout title="Aparición — Tinta estuvo aquí">
+  <div id="tm-node-shell" class="tm-node-shell">
+    <section class="tm-loading paper-card" data-state="loading">
+      <p class="eyebrow">tinta se está asomando…</p>
+      <p class="phrase">Esperando que aparezca.</p>
+    </section>
+  </div>
+
+  <!-- Estructura editorial post-modal (queda oculta hasta que unlock-node resuelve) -->
+  <div id="tm-node-body" hidden>
+    <p class="tm-return"><a href="/tinta/tintamap">← Volver al índice</a></p>
+
+    <section class="node-content paper-card">
+      <header class="node-head">
+        <p class="eyebrow">aparición encontrada</p>
+        <h2 data-slot="family_name">—</h2>
+        <p class="mini-progress">
+          <span data-slot="mini-count">— de — apariciones</span>
+          <span class="badge" data-slot="mini-badge" hidden>familia completada</span>
+        </p>
+      </header>
+
+      <!-- Contenido por familia (uno visible a la vez) -->
+      <div class="content-area">
+        <NodeDialogue />
+        <NodeTutorial />
+        <NodeTips />
+
+        <div class="node-dynamic" data-tm-block="dynamic" hidden>
+          <div class="stain-wrap">
+            <svg class="stain" viewBox="0 0 200 200" data-slot="stain">
+              <path d="M100,30 C140,20 170,60 165,100 C160,140 130,175 100,170 C60,175 40,150 35,110 C30,70 60,30 100,30 Z"
+                    fill="rgba(217,72,95,0.85)"
+                    stroke="rgba(17,17,17,0.7)" stroke-width="2"/>
+            </svg>
+          </div>
+          <button type="button" data-slot="shuffle-stain" class="btn-line">Cambiar mancha</button>
+          <div class="challenge">
+            <p class="ex-label">Reto</p>
+            <p data-slot="challenge">Convierte esta forma en un personaje, un objeto o un lugar.</p>
+          </div>
+          <p class="dynamic-close">
+            No intentes adivinar qué es. Haz que se convierta en algo.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Reward card (aparece cuando el backend devuelve reward_claim) -->
+    <div id="tm-reward-slot" hidden>
+      <NodeReward />
+    </div>
+  </div>
+
+  <DiscoveryModal />
+</BaseLayout>
+
+<script>
+  import { unlockNode, isTintaMapConfigured } from '../../../lib/tintamap-api.ts';
+  import {
+    setStoredPublicId,
+    setStoredRecoveryCode,
+    setStoredCreatedAt,
+    setCachedProgress,
+    hasExplorer,
+    upsertCachedClaim,
+  } from '../../../lib/tintamap-storage.ts';
+
+  const shell = document.getElementById('tm-node-shell')!;
+  const body = document.getElementById('tm-node-body') as HTMLElement;
+  const modal = document.getElementById('tm-discovery-modal') as HTMLDialogElement | null;
+
+  function editorial(title: string, body_: string) {
+    shell.innerHTML = '';
+    const el = document.createElement('section');
+    el.className = 'tm-editorial paper-card';
+    el.innerHTML = `
+      <p class="eyebrow">tinta estuvo aquí</p>
+      <h1>${escapeHtml(title)}</h1>
+      <p class="phrase">${escapeHtml(body_)}</p>
+      <p><a href="/tinta/tintamap" class="btn-line">Volver al índice</a></p>
+    `;
+    shell.appendChild(el);
+  }
+
+  function escapeHtml(s: string): string {
+    return s.replace(/[&<>"']/g, (c) => ({
+      '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;',
+    } as any)[c]);
+  }
+
+  async function main() {
+    const params = new URLSearchParams(location.search);
+    const token = (params.get('k') ?? '').trim();
+
+    if (!token) {
+      editorial('Falta la señal.', 'Este enlace no incluye una llave para abrir la aparición.');
+      return;
+    }
+    if (!isTintaMapConfigured()) {
+      editorial('Tinta aún no está conectada.',
+        'La experiencia todavía no tiene sus credenciales configuradas en este entorno.');
+      return;
+    }
+
+    let res: any;
+    try { res = await unlockNode(token); }
+    catch { editorial('Algo se movió en el mundo de Tinta.', 'Intenta acercarte otra vez en un momento.'); return; }
+
+    if (!res?.ok) {
+      editorial(res?.title ?? 'No pudimos abrir esta aparición.',
+                res?.body ?? 'Vuelve a intentarlo más tarde.');
+      return;
+    }
+
+    // Persistir credencial si es la primera vez
+    if (res.created_credentials) {
+      setStoredPublicId(res.created_credentials.public_id);
+      setStoredRecoveryCode(res.created_credentials.recovery_code);
+      setStoredCreatedAt(new Date().toISOString());
+    } else if (res.profile?.public_id) {
+      setStoredPublicId(res.profile.public_id);
+    }
+    if (res.progress) setCachedProgress({
+      discovered_count: res.progress.discovered_count,
+      families: res.progress.families,
+    });
+
+    if (modal) fillModal(res);
+    if (modal) {
+      modal.addEventListener('close', () => revealContent(res), { once: true });
+      modal.showModal();
+    } else {
+      revealContent(res);
+    }
+  }
+
+  function fillModal(res: any) {
+    const famProgress = res.progress?.families?.find((f: any) => f.family_id === res.placement.family_id);
+    const discovered = famProgress?.discovered ?? 0;
+    const total = famProgress?.total ?? 3;
+
+    setSlot('placement_id', `Encontraste ${res.placement.id}`);
+    setSlot('family_name', res.family.name);
+    setSlot('progress-text', `${discovered} de ${total} apariciones de esta familia`);
+    setSlot('scan_count', String(res.placement.scan_count));
+    setSlot('scan_word', res.placement.scan_count === 1 ? 'vez' : 'veces');
+
+    const dots = document.querySelector<HTMLElement>('[data-slot="progress-dots"]');
+    if (dots) {
+      const items = dots.querySelectorAll<HTMLElement>('.dot');
+      items.forEach((el, i) => {
+        el.classList.toggle('filled', i < discovered);
+      });
+    }
+    const badge = document.querySelector<HTMLElement>('[data-slot="badge-completed"]');
+    if (badge) badge.hidden = !famProgress?.completed;
+
+    const invitation = document.getElementById('tm-invitation');
+    if (invitation) invitation.hidden = !(res.created_credentials || !hasExplorer());
+  }
+
+  function setSlot(name: string, text: string) {
+    document.querySelectorAll<HTMLElement>(`[data-slot="${name}"]`).forEach((el) => {
+      el.textContent = text;
+    });
+  }
+
+  function revealContent(res: any) {
+    body.hidden = false;
+    shell.hidden = true;
+
+    const family = res.family;
+    const content = family?.content ?? {};
+    const famProgress = res.progress?.families?.find((f: any) => f.family_id === family.id) ?? null;
+
+    // Header
+    setSlot('family_name', family.name);
+    const miniCount = document.querySelector<HTMLElement>('[data-slot="mini-count"]');
+    if (miniCount && famProgress) miniCount.textContent = `${famProgress.discovered} de ${famProgress.total} apariciones`;
+    const miniBadge = document.querySelector<HTMLElement>('[data-slot="mini-badge"]');
+    if (miniBadge) miniBadge.hidden = !famProgress?.completed;
+
+    // Reveal correct block
+    document.querySelectorAll<HTMLElement>('[data-tm-block]').forEach((el) => { el.hidden = true; });
+    const type = family.content_type;
+    if (type === 'dialogue') {
+      renderDialogue(content, family.image_url);
+      if (content?.tutorial) renderTutorial(content.tutorial);
+    } else if (type === 'tips') {
+      renderTips(content);
+    } else if (type === 'dynamic') {
+      renderDynamic(content);
+    }
+
+    // Reward
+    if (res.reward_claim) renderReward(res.reward_claim, family.name);
+  }
+
+  function renderDialogue(content: any, imageUrl?: string | null) {
+    const block = document.querySelector<HTMLElement>('[data-tm-block="dialogue"]');
+    if (!block) return;
+    block.hidden = false;
+
+    const img = block.querySelector<HTMLImageElement>('[data-slot="image"]');
+    if (img && imageUrl) img.src = imageUrl;
+
+    const lines: string[] = Array.isArray(content?.dialogues) ? content.dialogues : [];
+    const line = block.querySelector<HTMLElement>('[data-slot="line"]');
+    const counter = block.querySelector<HTMLElement>('[data-slot="counter"]');
+    let i = 0;
+    const paint = () => {
+      if (line) line.textContent = lines[i] ?? '…';
+      if (counter) counter.textContent = `${i + 1} / ${Math.max(lines.length, 1)}`;
+    };
+    paint();
+    const nextBtn = block.querySelector<HTMLButtonElement>('[data-slot="next-btn"]');
+    nextBtn?.addEventListener('click', () => {
+      i = (i + 1) % Math.max(lines.length, 1);
+      paint();
+    });
+  }
+
+  function renderTutorial(tutorial: any) {
+    const block = document.querySelector<HTMLElement>('[data-tm-block="tutorial"]');
+    if (!block) return;
+    block.hidden = false;
+    const title = block.querySelector<HTMLElement>('[data-slot="title"]');
+    if (title && tutorial.title) title.textContent = tutorial.title;
+    const steps = block.querySelector<HTMLElement>('[data-slot="steps"]');
+    if (steps && Array.isArray(tutorial.steps)) {
+      steps.innerHTML = tutorial.steps.map((s: string) => `<li>${escapeHtml(s)}</li>`).join('');
+    }
+  }
+
+  function renderTips(content: any) {
+    const block = document.querySelector<HTMLElement>('[data-tm-block="tips"]');
+    if (!block) return;
+    block.hidden = false;
+    const tips = block.querySelector<HTMLElement>('[data-slot="tips"]');
+    if (tips && Array.isArray(content?.tips)) {
+      tips.innerHTML = content.tips.map((t: string) => `<li>${escapeHtml(t)}</li>`).join('');
+    }
+    const exercise = block.querySelector<HTMLElement>('[data-slot="exercise"]');
+    if (exercise && content?.exercise) exercise.textContent = content.exercise;
+  }
+
+  const STAIN_PATHS = [
+    'M100,30 C140,20 170,60 165,100 C160,140 130,175 100,170 C60,175 40,150 35,110 C30,70 60,30 100,30 Z',
+    'M90,25 C130,15 175,40 175,90 C175,130 150,180 105,175 C55,170 25,145 25,100 C25,55 55,30 90,25 Z',
+    'M100,40 C150,30 170,70 155,120 C140,160 100,180 60,160 C25,140 30,80 55,55 C75,40 90,40 100,40 Z',
+    'M110,20 C160,30 180,80 160,130 C140,175 90,180 55,150 C25,120 40,60 75,35 C90,25 100,20 110,20 Z',
+  ];
+
+  function renderDynamic(content: any) {
+    const block = document.querySelector<HTMLElement>('[data-tm-block="dynamic"]');
+    if (!block) return;
+    block.hidden = false;
+    const path = block.querySelector<SVGPathElement>('[data-slot="stain"] path');
+    let idx = 0;
+    const btn = block.querySelector<HTMLButtonElement>('[data-slot="shuffle-stain"]');
+    btn?.addEventListener('click', () => {
+      idx = (idx + 1) % STAIN_PATHS.length;
+      path?.setAttribute('d', STAIN_PATHS[idx]);
+    });
+    const challenge = block.querySelector<HTMLElement>('[data-slot="challenge"]');
+    if (challenge && content?.challenge) challenge.textContent = content.challenge;
+  }
+
+  function renderReward(rc: any, familyName: string) {
+    const slot = document.getElementById('tm-reward-slot');
+    if (!slot) return;
+    slot.hidden = false;
+
+    const card = slot.querySelector<HTMLElement>('.node-reward');
+    if (!card) return;
+    const first = !!rc.is_first_time;
+    card.dataset.variant = first ? 'first' : 'repeat';
+
+    const eyebrow = card.querySelector<HTMLElement>('[data-slot="eyebrow"]');
+    if (eyebrow) eyebrow.textContent = first ? 'recompensa desbloqueada' : 'recompensa ya desbloqueada';
+    const title = card.querySelector<HTMLElement>('[data-slot="title"]');
+    if (title) title.textContent = first
+      ? '¡Encontraste las tres apariciones!'
+      : 'Ya habías desbloqueado esta recompensa';
+    const lede = card.querySelector<HTMLElement>('[data-slot="lede"]');
+    if (lede) lede.innerHTML = first
+      ? `Completaste las tres apariciones de <em>${escapeHtml(rc.family_name ?? familyName)}</em>.`
+      : 'Este código ya estaba guardado en tu credencial.';
+    const rn = card.querySelector<HTMLElement>('[data-slot="reward_name"]');
+    if (rn) rn.textContent = rc.reward_name ?? '';
+    const cc = card.querySelector<HTMLElement>('[data-slot="claim_code"]');
+    if (cc) cc.textContent = rc.claim_code ?? '';
+
+    const btn = card.querySelector<HTMLButtonElement>('[data-slot="copy-btn"]');
+    btn?.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(rc.claim_code ?? '');
+        const t = btn.textContent;
+        btn.textContent = '¡Copiado!';
+        setTimeout(() => { btn.textContent = t; }, 1400);
+      } catch {}
+    });
+
+    // Cache local para hidratación inmediata en /credencial
+    try {
+      upsertCachedClaim({
+        family_id: rc.family_id,
+        family_name: rc.family_name,
+        reward_name: rc.reward_name,
+        claim_code: rc.claim_code,
+        status: rc.status ?? 'available',
+      });
+    } catch {}
+  }
+
+  main();
+</script>
+
+<style>
+  .tm-node-shell { display: grid; gap: 1rem; }
+  .tm-return { margin: 0 0 0.6rem; }
+  .tm-return a {
+    font-family: var(--font-accent);
+    font-size: 0.82rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-soft);
+    text-decoration: none;
+  }
+  .tm-return a:hover { color: var(--accent); }
+
+  .eyebrow {
+    margin: 0 0 0.35rem;
+    font-family: var(--font-accent);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--accent);
+  }
+  .tm-loading .phrase, .tm-editorial .phrase {
+    font-family: var(--font-display);
+    font-style: italic;
+    color: var(--ink-soft);
+    margin: 0 0 0.9rem;
+    font-size: 1.05rem;
+  }
+  .tm-editorial { max-width: 620px; }
+  .btn-line {
+    display: inline-flex;
+    padding: 0.55rem 0.9rem;
+    border: 1.5px solid var(--ink);
+    border-radius: 3px;
+    background: rgba(255,255,255,0.75);
+    text-decoration: none;
+    color: var(--ink);
+    font-weight: 700;
+    font-family: var(--font-accent);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-size: 0.78rem;
+    cursor: pointer;
+  }
+
+  .node-content { max-width: 780px; }
+  .node-head h2 {
+    margin: 0 0 0.35rem;
+    font-family: var(--font-display);
+    font-size: clamp(1.7rem, 5vw, 2.2rem);
+    line-height: 1.05;
+  }
+  .mini-progress {
+    margin: 0 0 1.15rem;
+    font-family: var(--font-accent);
+    font-size: 0.78rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    flex-wrap: wrap;
+  }
+  .mini-progress .badge {
+    background: var(--accent);
+    color: #fff;
+    padding: 0.18rem 0.55rem;
+    border-radius: 999px;
+    font-size: 0.68rem;
+    letter-spacing: 0.08em;
+  }
+
+  .content-area { display: grid; gap: 0.4rem; }
+
+  /* --- FAMILY-C dynamic --- */
+  .node-dynamic { display: grid; gap: 0.9rem; justify-items: start; }
+  .stain-wrap {
+    width: 100%;
+    max-width: 260px;
+    aspect-ratio: 1 / 1;
+    display: grid;
+    place-items: center;
+    margin: 0.5rem auto 0.3rem;
+  }
+  .stain { width: 100%; height: 100%; display: block; }
+  .node-dynamic .btn-line { align-self: center; }
+  .node-dynamic .challenge {
+    align-self: stretch;
+    padding: 0.75rem 0.9rem;
+    background: rgba(217,72,95,0.08);
+    border-left: 3px solid var(--accent);
+  }
+  .node-dynamic .ex-label {
+    margin: 0 0 0.25rem;
+    font-family: var(--font-accent);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.72rem;
+    color: var(--accent);
+    font-weight: 700;
+  }
+  .node-dynamic .challenge p:last-child { margin: 0; }
+  .dynamic-close {
+    align-self: stretch;
+    margin: 0;
+    color: var(--ink-soft);
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: 0.98rem;
+  }
+
+  #tm-reward-slot { margin-top: 1rem; }
+
+  @media (max-width: 480px) {
+    .node-content { padding: 1rem 0.95rem; }
+    .stain-wrap { max-width: 200px; }
+  }
+</style>

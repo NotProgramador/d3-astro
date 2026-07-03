@@ -1,0 +1,188 @@
+---
+/**
+ * DiscoveryModal.astro
+ *
+ * Modal editorial de hallazgo. Los slots [data-slot] se rellenan
+ * desde el script cliente en /tinta/tintamap/nodo.
+ *
+ * Cambios visuales de esta iteración:
+ *   - más aire, tipografía editorial
+ *   - progreso visual con puntos (○ ● ○)
+ *   - insignia "familia completada" cuando aplica
+ *   - responsive mobile-first (390 / 430 / 768)
+ */
+---
+
+<dialog id="tm-discovery-modal" class="tm-modal" aria-labelledby="tm-modal-title">
+  <form method="dialog" class="tm-modal-inner">
+    <div class="tm-modal-card">
+      <p class="eyebrow">encontraste</p>
+      <h2 id="tm-modal-title" data-slot="placement_id">—</h2>
+      <p id="tm-modal-family" class="tm-family-name" data-slot="family_name">—</p>
+
+      <div class="progress-block">
+        <div class="progress-dots" data-slot="progress-dots" aria-hidden="true">
+          <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+        </div>
+        <p class="progress-line">
+          <span data-slot="progress-text">1 de 3 apariciones de esta familia</span>
+        </p>
+        <p class="badge" data-slot="badge-completed" hidden>Familia completada</p>
+      </div>
+
+      <p class="scans">
+        Este punto ha sido escaneado <strong data-slot="scan_count">1</strong>
+        <span data-slot="scan_word">veces</span>.
+      </p>
+
+      <p id="tm-invitation" class="tm-invite" hidden>
+        ¿Quieres conservar tu recorrido?
+        <a href="/tinta/tintamap/credencial">Crear mi credencial</a>
+      </p>
+
+      <div class="tm-actions">
+        <button type="submit" class="tm-btn-primary" id="tm-enter">Entrar</button>
+      </div>
+    </div>
+  </form>
+</dialog>
+
+<style>
+  .tm-modal {
+    border: none;
+    background: transparent;
+    padding: 0;
+    margin: auto;
+    max-width: min(560px, calc(100vw - 24px));
+  }
+  .tm-modal::backdrop {
+    background: rgba(23, 20, 17, 0.55);
+    backdrop-filter: blur(2px);
+  }
+  .tm-modal-inner { padding: 0; }
+  .tm-modal-card {
+    padding: 1.6rem 1.4rem 1.35rem;
+    background: var(--card-bg);
+    border: 1.5px solid var(--card-border);
+    border-radius: var(--card-radius);
+    box-shadow: var(--shadow-float);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
+  .eyebrow {
+    margin: 0 0 0.4rem;
+    font-family: var(--font-accent);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--accent);
+  }
+  #tm-modal-title {
+    margin: 0 0 0.15rem;
+    font-family: var(--font-display);
+    font-size: clamp(1.9rem, 6vw, 2.4rem);
+    line-height: 1;
+  }
+  .tm-family-name {
+    margin: 0 0 1.1rem;
+    font-family: var(--font-display);
+    font-style: italic;
+    color: var(--ink-soft);
+    font-size: 1.1rem;
+    line-height: 1.35;
+  }
+
+  .progress-block {
+    display: grid;
+    gap: 0.35rem;
+    margin: 0.9rem 0 0.85rem;
+    padding: 0.75rem 0.85rem;
+    border-top: 1px solid rgba(17,17,17,0.1);
+    border-bottom: 1px solid rgba(17,17,17,0.1);
+  }
+  .progress-dots {
+    display: inline-flex;
+    gap: 0.4rem;
+    margin-bottom: 0.1rem;
+  }
+  .progress-dots .dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: 1.5px solid var(--ink);
+    background: transparent;
+    transition: background-color 200ms ease;
+  }
+  .progress-dots .dot.filled { background: var(--accent); border-color: var(--accent); }
+  .progress-line {
+    margin: 0;
+    font-family: var(--font-accent);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-size: 0.8rem;
+    color: var(--ink-soft);
+  }
+  .badge {
+    display: inline-block;
+    margin: 0.2rem 0 0;
+    padding: 0.2rem 0.55rem;
+    background: var(--accent);
+    color: #fff;
+    border-radius: 999px;
+    font-family: var(--font-accent);
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 700;
+  }
+
+  .scans {
+    margin: 0 0 0.8rem;
+    color: var(--ink-soft);
+    font-size: 0.92rem;
+  }
+  .scans strong { color: var(--ink); font-weight: 700; }
+
+  .tm-invite {
+    margin: 0 0 1rem;
+    padding: 0.7rem 0.8rem;
+    background: rgba(217,72,95,0.08);
+    border-left: 3px solid var(--accent);
+    font-size: 0.92rem;
+    line-height: 1.5;
+  }
+  .tm-invite a { font-weight: 700; color: var(--ink); }
+
+  .tm-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 0.4rem;
+  }
+  .tm-btn-primary {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.75rem 1.2rem;
+    border: 1.5px solid var(--ink);
+    border-radius: 3px;
+    background: rgba(255,255,255,0.9);
+    font-family: var(--font-body);
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 4px 4px 0 #11111133;
+    transition: transform 140ms ease, box-shadow 140ms ease;
+  }
+  .tm-btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 5px 5px 0 #11111122;
+  }
+
+  @media (max-width: 480px) {
+    .tm-modal { max-width: calc(100vw - 16px); }
+    .tm-modal-card { padding: 1.2rem 1.05rem 1.05rem; }
+    #tm-modal-title { font-size: 1.75rem; }
+    .tm-family-name { font-size: 1rem; margin-bottom: 0.9rem; }
+    .tm-btn-primary { width: 100%; justify-content: center; }
+    .tm-actions { justify-content: stretch; }
+  }
+</style>

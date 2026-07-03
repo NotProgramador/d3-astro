@@ -1,0 +1,178 @@
+---
+/**
+ * FamilyProgress.astro
+ *
+ * Muestra 3 chips (A-01, A-02, A-03) con estado descubierto/bloqueado
+ * y un pie de familia según el progreso.
+ *
+ * El estado se hidrata en cliente desde localStorage (cache) y desde
+ * el backend (fuente de verdad). Los nodos bloqueados no son clicables
+ * ni exponen key ni ubicación.
+ */
+interface Family {
+  id: string;
+  name: string;
+  description?: string | null;
+  symbol?: string | null;
+}
+export interface Props {
+  family: Family;
+  placementsCount?: number;
+}
+const { family, placementsCount = 3 } = Astro.props;
+const letter = family.id.replace('FAMILY-', '');
+---
+
+<article class="fam-progress paper-card" data-family={family.id} data-discovered="0">
+  <header class="fp-head">
+    <span class="fp-symbol" aria-hidden="true">{family.symbol ?? '·'}</span>
+    <div class="fp-title">
+      <p class="sketch-label">familia {letter}</p>
+      <h3>{family.name}</h3>
+    </div>
+  </header>
+
+  {family.description && <p class="fp-desc">{family.description}</p>}
+
+  <div class="fp-chips" role="list">
+    {Array.from({ length: placementsCount }).map((_, i) => {
+      const idx = String(i + 1).padStart(2, '0');
+      const pid = `${letter}-${idx}`;
+      return (
+        <div class="chip" role="listitem" data-placement={pid} data-state="locked" aria-label={`Nodo ${pid} bloqueado`}>
+          <span class="mark" aria-hidden="true">?</span>
+          <span class="pid">{pid}</span>
+        </div>
+      );
+    })}
+  </div>
+
+  <footer class="fp-foot">
+    <p class="counter" data-slot="counter">
+      <strong data-slot="discovered">0</strong>
+      <span> de </span>
+      <strong data-slot="total">{placementsCount}</strong>
+      <span> apariciones</span>
+    </p>
+    <p class="msg" data-slot="msg">Tinta aún no aparece en esta familia.</p>
+  </footer>
+</article>
+
+<script>
+  import { getCachedProgress } from '../../lib/tintamap-storage.ts';
+
+  const progress = getCachedProgress();
+  if (progress) {
+    document.querySelectorAll<HTMLElement>('.fam-progress').forEach((card) => {
+      const famId = card.dataset.family;
+      const fp = progress.families.find((f) => f.family_id === famId);
+      if (!fp) return;
+      hydrate(card, fp.discovered, fp.total, fp.completed);
+    });
+  }
+
+  function hydrate(card: HTMLElement, discovered: number, total: number, completed: boolean) {
+    card.dataset.discovered = String(discovered);
+    if (completed) card.dataset.state = 'completed';
+
+    const chips = card.querySelectorAll<HTMLElement>('.chip');
+    chips.forEach((chip, i) => {
+      if (i < discovered) {
+        chip.dataset.state = 'discovered';
+        chip.setAttribute('aria-label', `Nodo ${chip.dataset.placement} descubierto`);
+        const m = chip.querySelector('.mark');
+        if (m) m.textContent = '✓';
+      }
+    });
+
+    const disc = card.querySelector<HTMLElement>('[data-slot="discovered"]');
+    const tot = card.querySelector<HTMLElement>('[data-slot="total"]');
+    if (disc) disc.textContent = String(discovered);
+    if (tot)  tot.textContent  = String(total);
+
+    const msg = card.querySelector<HTMLElement>('[data-slot="msg"]');
+    if (msg) {
+      if (completed)             msg.textContent = 'Encontraste las tres apariciones.';
+      else if (discovered === 0) msg.textContent = 'Tinta aún no aparece en esta familia.';
+      else if (discovered === 1) msg.textContent = 'Encontraste la primera aparición.';
+      else if (discovered === 2) msg.textContent = 'Sólo falta una aparición para completar esta familia.';
+    }
+  }
+</script>
+
+<style>
+  .fam-progress {
+    display: grid;
+    gap: 0.75rem;
+  }
+  .fp-head { display: flex; align-items: flex-start; gap: 0.85rem; }
+  .fp-symbol {
+    font-size: 2rem;
+    line-height: 1;
+    transform: rotate(-5deg);
+    display: inline-block;
+  }
+  .fp-title h3 { margin: 0.15rem 0 0; font-size: 1.15rem; line-height: 1.15; }
+  .fp-desc {
+    margin: 0;
+    color: var(--ink-soft);
+    font-size: 0.92rem;
+    line-height: 1.55;
+  }
+
+  .fp-chips {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.4rem 0.7rem;
+    border: 1.5px dashed rgba(17,17,17,0.35);
+    border-radius: 3px;
+    background: rgba(255,255,255,0.4);
+    font-family: var(--font-accent);
+    font-size: 0.8rem;
+    letter-spacing: 0.06em;
+    color: var(--ink-soft);
+    cursor: default;
+    pointer-events: none;
+    user-select: none;
+  }
+  .chip[data-state="discovered"] {
+    border-style: solid;
+    border-color: var(--accent);
+    color: var(--ink);
+    background: rgba(217,72,95,0.08);
+  }
+  .chip[data-state="discovered"] .mark { color: var(--accent); font-weight: 700; }
+  .chip .mark { font-weight: 700; display: inline-block; min-width: 0.7em; text-align: center; }
+
+  .fp-foot { display: grid; gap: 0.25rem; margin-top: 0.1rem; }
+  .counter {
+    margin: 0;
+    font-family: var(--font-accent);
+    font-size: 0.8rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+  .counter strong { color: var(--ink); }
+  .msg {
+    margin: 0;
+    color: var(--ink);
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: 0.98rem;
+    line-height: 1.4;
+  }
+  .fam-progress[data-state="completed"] .msg { color: var(--accent); }
+
+  @media (max-width: 480px) {
+    .fp-head { gap: 0.6rem; }
+    .fp-symbol { font-size: 1.7rem; }
+    .fp-title h3 { font-size: 1.05rem; }
+  }
+</style>
