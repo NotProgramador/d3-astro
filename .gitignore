@@ -13,3 +13,5 @@ supabase/.env.local
 .claude/
 
 supabase/.temp/
+
+supabase/.temp/
