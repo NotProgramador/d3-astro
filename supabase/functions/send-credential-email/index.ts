@@ -142,6 +142,18 @@ Deno.serve(async (req) => {
     let delivery: "sent" | "queued" | "failed" = "queued";
     let lastError: string | null = null;
 
+    // NOTA de seguridad: el `body_text` / `body_html` puede contener
+    // `recovery_code` y `claim_code` en claro. NO los persistimos en
+    // `email_outbox` — sólo dejamos metadatos para telemetría. El usuario
+    // reintenta el envío desde la UI si algo falla; la fila del outbox NO
+    // es fuente para reenvío automático.
+    const outboxBase = {
+      to_email: profile.email,
+      subject,
+      body_text: "",           // deliberadamente vacío
+      body_html: null,          // idem
+      kind: isClaimMode ? "claim_summary" : "credential_summary",
+    };
     if (resendKey) {
       try {
         const res = await fetch("https://api.resend.com/emails", {
@@ -164,28 +176,25 @@ Deno.serve(async (req) => {
           delivery = "failed";
           lastError = `resend_${res.status}`;
           await db.from("email_outbox").insert({
-            to_email: profile.email, subject,
-            body_text: bodyText, body_html: bodyHtml,
-            kind: isClaimMode ? "claim_summary" : "credential_summary",
-            status: "failed", last_error: lastError,
+            ...outboxBase,
+            status: "failed",
+            last_error: lastError,
           });
         }
       } catch (err) {
         delivery = "failed";
         lastError = "resend_network";
         await db.from("email_outbox").insert({
-          to_email: profile.email, subject,
-          body_text: bodyText, body_html: bodyHtml,
-          kind: isClaimMode ? "claim_summary" : "credential_summary",
-          status: "failed", last_error: String(err).slice(0, 200),
+          ...outboxBase,
+          status: "failed",
+          last_error: String(err).slice(0, 200),
         });
       }
     } else {
       await db.from("email_outbox").insert({
-        to_email: profile.email, subject,
-        body_text: bodyText, body_html: bodyHtml,
-        kind: isClaimMode ? "claim_summary" : "credential_summary",
-        status: "skipped", last_error: "RESEND_API_KEY no configurado",
+        ...outboxBase,
+        status: "skipped",
+        last_error: "RESEND_API_KEY no configurado",
       });
     }
 

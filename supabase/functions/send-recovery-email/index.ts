@@ -61,6 +61,10 @@ Deno.serve(async (req) => {
     if (profile) {
       const resendKey = Deno.env.get("RESEND_API_KEY");
       const from = Deno.env.get("RECOVERY_EMAIL_FROM") ?? "Tinta <noreply@example.com>";
+      // NOTA de seguridad: no persistir el body_text del correo. Sólo
+      // metadatos. El correo original no contiene el recovery_code hoy
+      // (ver comentario del archivo), pero adoptamos la misma política
+      // por consistencia y defensa en profundidad.
       if (resendKey) {
         try {
           await fetch("https://api.resend.com/emails", {
@@ -71,12 +75,13 @@ Deno.serve(async (req) => {
         } catch (err) {
           console.warn("Resend fail, encolando", err);
           await db.from("email_outbox").insert({
-            to_email: email, subject, body_text: bodyText, kind: "recovery_request",
+            to_email: email, subject, body_text: "", kind: "recovery_request",
+            status: "failed", last_error: "resend_network",
           });
         }
       } else {
         await db.from("email_outbox").insert({
-          to_email: email, subject, body_text: bodyText, kind: "recovery_request",
+          to_email: email, subject, body_text: "", kind: "recovery_request",
           status: "skipped", last_error: "SMTP no configurado",
         });
       }
