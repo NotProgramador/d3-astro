@@ -14,6 +14,7 @@ export interface ProfileClaim {
   claim_code: string;
   status: string;
   created_at: string;
+  claim_emailed_at?: string | null;
   is_first_time?: boolean;
 }
 
@@ -27,7 +28,7 @@ export async function getProfileClaims(
 ): Promise<ProfileClaim[]> {
   const { data, error } = await db
     .from("reward_claims")
-    .select("claim_code, status, created_at, rewards ( family_id, name, description, reward_type )")
+    .select("claim_code, status, created_at, claim_emailed_at, rewards ( family_id, name, description, reward_type )")
     .eq("profile_id", profileId);
   if (error || !data) return [];
 
@@ -51,6 +52,7 @@ export async function getProfileClaims(
     claim_code: r.claim_code,
     status: r.status,
     created_at: r.created_at,
+    claim_emailed_at: r.claim_emailed_at ?? null,
   }));
 }
 

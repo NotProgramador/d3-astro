@@ -60,7 +60,7 @@ Deno.serve(async (req) => {
 
     const { data: profile } = await db
       .from("explorer_profiles")
-      .select("id, public_id, created_at, email, email_verified")
+      .select("id, public_id, created_at, email, email_verified, credential_emailed_at")
       .eq("recovery_code_hash", codeHash)
       .maybeSingle();
 
@@ -112,6 +112,7 @@ Deno.serve(async (req) => {
       // Cierre de loop: las claims existentes del perfil se devuelven
       // sin crear ni tocar reward_claims (idempotente al recuperar).
       claims: await getProfileClaims(db, profile.id),
+      credential_emailed_at: profile.credential_emailed_at ?? null,
     });
   } catch (e) {
     console.error("recover-by-code error", e);

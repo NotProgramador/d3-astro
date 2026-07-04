@@ -164,6 +164,42 @@ export function upsertCachedClaim(claim: CachedClaim): void {
   setCachedClaims(all);
 }
 
+// -----------------------------------------------------------
+// Estado local de acciones ya realizadas (para colapsar CTAs)
+// El backend sigue siendo fuente de verdad; esto es sólo pintado
+// inmediato mientras hidratamos.
+// -----------------------------------------------------------
+const K_CRED_DOWNLOADED = 'ddd.tintamap.credential_downloaded_at';
+const K_CRED_EMAILED    = 'ddd.tintamap.credential_emailed_at';
+const K_CLAIM_EMAILED   = 'ddd.tintamap.claim_emailed_at';
+
+export function getCredentialDownloadedAt(): string | null {
+  return safeLocalStorage()?.getItem(K_CRED_DOWNLOADED) ?? null;
+}
+export function setCredentialDownloadedAt(iso: string): void {
+  safeLocalStorage()?.setItem(K_CRED_DOWNLOADED, iso);
+}
+export function getCachedCredentialEmailedAt(): string | null {
+  return safeLocalStorage()?.getItem(K_CRED_EMAILED) ?? null;
+}
+export function setCachedCredentialEmailedAt(iso: string): void {
+  safeLocalStorage()?.setItem(K_CRED_EMAILED, iso);
+}
+export function getCachedClaimEmailedAt(claimCode: string): string | null {
+  const raw = safeLocalStorage()?.getItem(K_CLAIM_EMAILED);
+  if (!raw) return null;
+  try { return JSON.parse(raw)?.[claimCode] ?? null; } catch { return null; }
+}
+export function setCachedClaimEmailedAt(claimCode: string, iso: string): void {
+  const ls = safeLocalStorage();
+  if (!ls) return;
+  let map: Record<string, string> = {};
+  const raw = ls.getItem(K_CLAIM_EMAILED);
+  if (raw) { try { map = JSON.parse(raw); } catch {} }
+  map[claimCode] = iso;
+  ls.setItem(K_CLAIM_EMAILED, JSON.stringify(map));
+}
+
 export function hasExplorer(): boolean {
   return !!getStoredPublicId();
 }
@@ -178,4 +214,7 @@ export function forgetExplorer(): void {
   ls.removeItem(K_PROGRESS);
   ls.removeItem(K_REC_STATE);
   ls.removeItem(K_CLAIMS);
+  ls.removeItem(K_CRED_DOWNLOADED);
+  ls.removeItem(K_CRED_EMAILED);
+  ls.removeItem(K_CLAIM_EMAILED);
 }

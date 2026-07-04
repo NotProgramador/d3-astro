@@ -69,11 +69,13 @@ const DEV_REGISTRY = [
 
 function parseMode(argv) {
   const flags = new Set(argv.slice(2));
-  if (flags.has('--verify-dev') && flags.has('--production')) {
-    throw new Error('No combines --verify-dev con --production.');
+  const modes = ['--verify-dev', '--production', '--home-pilot'].filter((f) => flags.has(f));
+  if (modes.length > 1) {
+    throw new Error(`No combines modos: ${modes.join(' ')}`);
   }
   if (flags.has('--verify-dev')) return 'verify-dev';
   if (flags.has('--production')) return 'production';
+  if (flags.has('--home-pilot')) return 'home-pilot';
   return 'dev';
 }
 
@@ -402,6 +404,101 @@ function runVerifyDev() {
 }
 
 // -----------------------------------------------------------
+// Modo HOME-PILOT (3 tokens reales para NFC físico en casa)
+// -----------------------------------------------------------
+
+function runHomePilot() {
+  ensurePrivateDir();
+  const pepper = loadPepper('dev'); // usa el mismo pepper que dev / staging remoto
+  const args = process.argv.slice(2);
+  const baseUrlIdx = args.indexOf('--base-url');
+  const baseUrl = baseUrlIdx >= 0 ? args[baseUrlIdx + 1] : 'https://domingosdedibujar.netlify.app';
+
+  const placements = [
+    { placement_id: 'A-01', family_id: 'FAMILY-A', ubicacion: 'Sala / entrada — a la altura de la vista' },
+    { placement_id: 'A-02', family_id: 'FAMILY-A', ubicacion: 'Cocina — junto a la puerta del refrigerador' },
+    { placement_id: 'A-03', family_id: 'FAMILY-A', ubicacion: 'Recámara — cerca del escritorio o buró' },
+  ];
+
+  const rows = placements.map((p) => {
+    const token = generateRandomToken(); // 32 bytes base64url
+    return {
+      ...p,
+      access_key: token,
+      access_key_hash: sha256Hex(token + pepper),
+      url: `${baseUrl}/tinta/tintamap/nodo?k=${encodeURIComponent(token)}`,
+      created_at: nowIso(),
+    };
+  });
+
+  // CSV privado con el manifest completo
+  const csvHeader = ['placement_id','family_id','access_key','url','ubicacion_sugerida','key_version','created_at'].join(',');
+  const csvRows = rows.map((r) => [
+    r.placement_id, r.family_id, r.access_key, r.url, `"${r.ubicacion.replace(/"/g,'""')}"`, 'v1-home-pilot', r.created_at,
+  ].join(','));
+  const csvPath = path.join(PRIVATE_DIR, 'home-pilot-nfc.csv');
+  fs.writeFileSync(csvPath, csvHeader + '\n' + csvRows.join('\n') + '\n', 'utf8');
+
+  // SQL de rotación remota (idempotente por placement id)
+  const sqlPath = path.join(PRIVATE_DIR, 'home-pilot-rotate.sql');
+  const sqlHeader = [
+    '-- Rotación de placements A-01, A-02, A-03 para el piloto físico en casa.',
+    '-- Generado por scripts/generate-tintamap-keys.mjs --home-pilot',
+    `-- Fecha: ${nowIso()}`,
+    '--',
+    '-- Ejecutar en el proyecto REMOTO (Supabase Dashboard → SQL Editor).',
+    '-- Nunca commitear este archivo — está en /private/ ignorado por Git.',
+    '',
+    'begin;',
+    '',
+  ].join('\n');
+  const sqlBody = rows.map((r) => `update public.node_placements
+  set access_key_hash = '${r.access_key_hash}',
+      status          = 'active',
+      updated_at      = now()
+where id = '${r.placement_id}';`).join('\n\n');
+  fs.writeFileSync(sqlPath, sqlHeader + sqlBody + '\n\ncommit;\n', 'utf8');
+
+  // Actualizar el reporte
+  const reportPath = path.join(PRIVATE_DIR, 'key-generation-report.md');
+  const report = [
+    '# Reporte de generación — Piloto físico en casa (3 NFC)',
+    '',
+    `Fecha: ${nowIso()}`,
+    `Modo: home-pilot`,
+    `Base URL: ${baseUrl}`,
+    `Placements: ${rows.map((r) => r.placement_id).join(', ')}`,
+    '',
+    '## Archivos generados',
+    '',
+    '- `home-pilot-nfc.csv` — tokens en claro + URLs listas para grabar en NFC Tools.',
+    '- `home-pilot-rotate.sql` — SQL de rotación para aplicar en el Supabase remoto.',
+    '',
+    '## Aplicación de la rotación',
+    '',
+    '1. Aplicar `home-pilot-rotate.sql` en Supabase Dashboard → SQL Editor',
+    '   del proyecto remoto (arrwnyyscatmvonveogg).',
+    '2. Verificar con `scripts/remote-smoke-test.mjs` que A-01 aún responde ok',
+    '   contra el token nuevo (el smoke test tomará el token del CSV nuevo).',
+    '3. Grabar las 3 URLs del CSV en 3 etiquetas NFC (ver docs/tinta-estuvo-aqui/HOME_PILOT_3_NFC.md).',
+    '',
+    '## Seguridad',
+    '',
+    '- Ninguno de estos archivos debe salir de `private/`.',
+    '- El pepper NO aparece en ningún archivo.',
+    '- Los tokens dev clásicos (TOKEN_A0X_DEV) dejan de funcionar en A-01/A-02/A-03',
+    '  al aplicar la rotación (las otras familias B/C siguen con los hashes dev).',
+    '',
+  ].join('\n');
+  fs.writeFileSync(reportPath, report, 'utf8');
+
+  console.log('[tintamap] modo home-pilot — 3 archivos escritos:');
+  console.log('  •', path.relative(REPO_ROOT, csvPath), '(tokens en claro — trata como secreto)');
+  console.log('  •', path.relative(REPO_ROOT, sqlPath), '(aplicar manualmente en el remoto)');
+  console.log('  •', path.relative(REPO_ROOT, reportPath));
+}
+
+// -----------------------------------------------------------
 // Entry point
 // -----------------------------------------------------------
 
@@ -414,6 +511,7 @@ function runVerifyDev() {
     if (mode === 'dev') runDev();
     else if (mode === 'production') runProduction();
     else if (mode === 'verify-dev') runVerifyDev();
+    else if (mode === 'home-pilot') runHomePilot();
   } catch (e) {
     console.error('[tintamap] error:', e.message || e);
     process.exit(2);

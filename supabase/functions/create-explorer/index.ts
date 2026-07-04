@@ -126,7 +126,7 @@ Deno.serve(async (req) => {
 async function loadProfileState(db: typeof supabaseAdmin, profileId: string) {
   const { data: prof } = await db
     .from("explorer_profiles")
-    .select("id, public_id, created_at, email, email_verified")
+    .select("id, public_id, created_at, email, email_verified, credential_emailed_at")
     .eq("id", profileId)
     .maybeSingle();
   if (!prof) {
@@ -155,5 +155,6 @@ async function loadProfileState(db: typeof supabaseAdmin, profileId: string) {
     recovery_status: computeRecoveryStatus(prof.email, prof.email_verified),
     preferences: prefsRow ?? null,
     claims: await getProfileClaims(db, profileId),
+    credential_emailed_at: prof.credential_emailed_at ?? null,
   };
 }

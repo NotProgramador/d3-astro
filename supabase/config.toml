@@ -53,5 +53,8 @@ verify_jwt = false
 [functions.rotate-node-key]
 verify_jwt = false
 
+[functions.send-credential-email]
+verify_jwt = false
+
 [analytics]
 enabled = false

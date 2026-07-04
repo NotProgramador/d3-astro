@@ -21,8 +21,15 @@ import RecoveryForm from '../../../components/tinta-map/RecoveryForm.astro';
 </BaseLayout>
 
 <script>
-  import { recoverByCode, sendRecoveryEmail } from '../../../lib/tintamap-api.ts';
-  import { setStoredPublicId, setStoredCreatedAt, setCachedProgress, setCachedRecoveryState } from '../../../lib/tintamap-storage.ts';
+  import { recoverByCode, sendRecoveryEmail, isNotConfiguredError } from '../../../lib/tintamap-api.ts';
+  import {
+    setStoredPublicId, setStoredCreatedAt, setCachedProgress,
+    setCachedRecoveryState, setCachedClaims, setCachedCredentialEmailedAt,
+    setCachedClaimEmailedAt,
+  } from '../../../lib/tintamap-storage.ts';
+
+  const NOT_CONFIGURED_MSG =
+    'Tinta aún no está conectada en este entorno. Contacta al equipo si acabas de agregar variables — puede faltar redeploy.';
 
   function setFeedback(target: string, msg: string, kind: 'error' | 'ok' | '' = '') {
     const el = document.querySelector<HTMLElement>(`[data-target="${target}"]`);
@@ -55,13 +62,30 @@ import RecoveryForm from '../../../components/tinta-map/RecoveryForm.astro';
           email_verified: !!res.email_verified,
           preferences: res.preferences ?? null,
         });
+        // Claims + timestamps recuperados también (para que /credencial
+        // muestre estado correcto sin esperar la hidratación por probe).
+        if (Array.isArray(res.claims)) {
+          setCachedClaims(res.claims.map((c) => ({
+            family_id: c.family_id,
+            family_name: c.family_name,
+            reward_name: c.reward_name,
+            claim_code: c.claim_code,
+            status: c.status,
+          })));
+          for (const c of res.claims) {
+            if (c.claim_emailed_at) setCachedClaimEmailedAt(c.claim_code, c.claim_emailed_at);
+          }
+        }
+        if (res.credential_emailed_at) setCachedCredentialEmailedAt(res.credential_emailed_at);
         setFeedback('code-feedback', 'Credencial restaurada. Te llevamos al índice…', 'ok');
         setTimeout(() => location.href = '/tinta/tintamap', 900);
       } else {
         setFeedback('code-feedback', res?.body ?? 'No pudimos recuperar esta credencial.', 'error');
       }
-    } catch {
-      setFeedback('code-feedback', 'No pudimos conectar. Intenta de nuevo en un momento.', 'error');
+    } catch (e) {
+      setFeedback('code-feedback',
+        isNotConfiguredError(e) ? NOT_CONFIGURED_MSG : 'No pudimos conectar. Intenta de nuevo en un momento.',
+        'error');
     }
   });
 
@@ -75,8 +99,10 @@ import RecoveryForm from '../../../components/tinta-map/RecoveryForm.astro';
       setFeedback('email-feedback',
         res?.message ?? 'Si encontramos una credencial asociada, recibirás un correo.',
         'ok');
-    } catch {
-      setFeedback('email-feedback', 'No pudimos conectar. Intenta de nuevo en un momento.', 'error');
+    } catch (e) {
+      setFeedback('email-feedback',
+        isNotConfiguredError(e) ? NOT_CONFIGURED_MSG : 'No pudimos conectar. Intenta de nuevo en un momento.',
+        'error');
     }
   });
 </script>

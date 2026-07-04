@@ -19,6 +19,34 @@ import NodeReward from '../../../components/tinta-map/NodeReward.astro';
     </section>
   </div>
 
+  <!-- 1.b Acciones sobre la credencial (descargar PNG + enviar por correo) -->
+  <section id="tm-cred-actions" class="paper-card cred-actions-section" hidden>
+    <p class="eyebrow">acciones</p>
+    <h2>Guarda o comparte tu credencial</h2>
+
+    <div class="cred-actions-row">
+      <div class="cred-action" data-slot="download-block">
+        <button type="button" id="tm-download-png" class="btn-primary">
+          Descargar credencial PNG
+        </button>
+        <p class="hint" data-slot="download-hint" hidden>
+          Descargada el <strong data-slot="downloaded-when"></strong>.
+          <button type="button" id="tm-download-again" class="btn-tiny">Descargar de nuevo</button>
+        </p>
+      </div>
+
+      <div class="cred-action" data-slot="mail-block">
+        <button type="button" id="tm-send-credential" class="btn-primary" disabled>
+          Enviar mi credencial por correo
+        </button>
+        <p class="hint" data-slot="mail-hint">
+          Agrega un correo de recuperación más abajo para poder enviarte esta credencial.
+        </p>
+        <p class="feedback" data-target="send-cred-feedback" aria-live="polite"></p>
+      </div>
+    </div>
+  </section>
+
   <!-- 2. Código de recuperación (oculto por default, sólo en modo privado) -->
   <section id="tm-recovery-block" class="paper-card rec-code-section" hidden>
     <p class="eyebrow">código de recuperación</p>
@@ -93,8 +121,18 @@ import NodeReward from '../../../components/tinta-map/NodeReward.astro';
     getCachedProgress, setCachedProgress,
     getCachedRecoveryState, setCachedRecoveryState,
     getCachedClaims, setCachedClaims,
+    getCredentialDownloadedAt, setCredentialDownloadedAt,
+    getCachedCredentialEmailedAt, setCachedCredentialEmailedAt,
+    getCachedClaimEmailedAt, setCachedClaimEmailedAt,
   } from '../../../lib/tintamap-storage.ts';
-  import { createExplorer, probeExplorer, attachRecoveryEmail } from '../../../lib/tintamap-api.ts';
+  import {
+    createExplorer, probeExplorer, attachRecoveryEmail,
+    sendCredentialEmail, isNotConfiguredError,
+  } from '../../../lib/tintamap-api.ts';
+  import { downloadCredentialPng } from '../../../lib/tintamap-credential-png.ts';
+
+  const NOT_CONFIGURED_MSG =
+    'Tinta aún no está conectada. Faltan variables de entorno del deploy.';
 
   type RecoveryStatus = 'none' | 'pending' | 'verified';
   interface ProfileState {
@@ -104,6 +142,12 @@ import NodeReward from '../../../components/tinta-map/NodeReward.astro';
     masked_email: string | null;
     email_verified: boolean;
     recovery_status: RecoveryStatus;
+    credential_emailed_at?: string | null;
+  }
+
+  function fmtDateTime(iso: string | null | undefined): string {
+    if (!iso) return '';
+    try { return new Date(iso).toLocaleString(); } catch { return ''; }
   }
 
   const slot = document.getElementById('tm-cred-slot')!;
@@ -111,6 +155,7 @@ import NodeReward from '../../../components/tinta-map/NodeReward.astro';
   const recoveryBlock = document.getElementById('tm-recovery-block')!;
   const claimsSection = document.getElementById('tm-claims-section')!;
   const claimsList = document.getElementById('tm-claims-list')!;
+  const credActions = document.getElementById('tm-cred-actions')!;
 
   function renderEmpty() {
     hideAllExtras();
@@ -144,7 +189,9 @@ import NodeReward from '../../../components/tinta-map/NodeReward.astro';
         } else {
           btn.textContent = 'No se pudo. Intenta más tarde';
         }
-      } catch { btn.textContent = 'Error de conexión'; }
+      } catch (e) {
+        btn.textContent = isNotConfiguredError(e) ? 'Tinta aún no está conectada' : 'Error de conexión';
+      }
     });
   }
 
@@ -152,6 +199,7 @@ import NodeReward from '../../../components/tinta-map/NodeReward.astro';
     emailBlock.hidden = true;
     recoveryBlock.hidden = true;
     claimsSection.hidden = true;
+    credActions.hidden = true;
   }
 
   function renderCredential(state: ProfileState) {
@@ -187,6 +235,111 @@ import NodeReward from '../../../components/tinta-map/NodeReward.astro';
 
     // Estado de correo
     renderEmailStatus(state);
+
+    // Acciones de credencial (descargar PNG, enviar por correo)
+    wireCredActions(state);
+  }
+
+  function wireCredActions(state: ProfileState) {
+    credActions.hidden = false;
+    const downloadBtn = document.getElementById('tm-download-png') as HTMLButtonElement;
+    const downloadAgain = document.getElementById('tm-download-again') as HTMLButtonElement;
+    const downloadHint = credActions.querySelector<HTMLElement>('[data-slot="download-hint"]')!;
+    const downloadedWhen = credActions.querySelector<HTMLElement>('[data-slot="downloaded-when"]')!;
+    const sendBtn = document.getElementById('tm-send-credential') as HTMLButtonElement;
+    const mailHint = credActions.querySelector<HTMLElement>('[data-slot="mail-hint"]')!;
+
+    // Estado del botón de descarga
+    const alreadyDownloaded = getCredentialDownloadedAt();
+    if (alreadyDownloaded) {
+      downloadBtn.hidden = true;
+      downloadHint.hidden = false;
+      downloadedWhen.textContent = fmtDateTime(alreadyDownloaded);
+    } else {
+      downloadBtn.hidden = false;
+      downloadHint.hidden = true;
+    }
+
+    const doDownload = async () => {
+      try {
+        const ok = await downloadCredentialPng({
+          publicId: state.profile!.public_id,
+          createdAtISO: state.profile?.created_at ?? getStoredCreatedAt(),
+          discoveredCount: (state.progress ?? getCachedProgress())?.discovered_count ?? 0,
+          familiesCompleted: ((state.progress ?? getCachedProgress())?.families ?? [])
+            .filter((f: any) => f.completed).length,
+          claims: getCachedClaims(),
+        });
+        if (ok) {
+          const iso = new Date().toISOString();
+          setCredentialDownloadedAt(iso);
+          downloadBtn.hidden = true;
+          downloadHint.hidden = false;
+          downloadedWhen.textContent = fmtDateTime(iso);
+        }
+      } catch (e) {
+        console.warn('PNG error', e);
+      }
+    };
+    downloadBtn.onclick = doDownload;
+    downloadAgain.onclick = doDownload;
+
+    // Estado del botón de correo (depende del backend + cache)
+    const emailedAt = state.credential_emailed_at ?? getCachedCredentialEmailedAt();
+    if (!state.has_recovery_email) {
+      sendBtn.disabled = true;
+      sendBtn.hidden = false;
+      mailHint.hidden = false;
+      mailHint.innerHTML = 'Agrega un correo de recuperación más abajo para poder enviarte esta credencial.';
+    } else if (emailedAt) {
+      // Colapsado: ya se envió
+      sendBtn.textContent = 'Volver a enviar';
+      sendBtn.disabled = false;
+      sendBtn.hidden = false;
+      mailHint.hidden = false;
+      const toMasked = state.masked_email ?? '';
+      mailHint.innerHTML = `Enviada el <strong>${escapeHtml(fmtDateTime(emailedAt))}</strong> a <em>${escapeHtml(toMasked)}</em>.`;
+      if (state.credential_emailed_at) setCachedCredentialEmailedAt(state.credential_emailed_at);
+    } else {
+      sendBtn.textContent = 'Enviar mi credencial por correo';
+      sendBtn.disabled = false;
+      sendBtn.hidden = false;
+      mailHint.hidden = true;
+    }
+
+    sendBtn.onclick = () => sendCredentialByEmail(state);
+  }
+
+  async function sendCredentialByEmail(state: ProfileState) {
+    setFeedback('send-cred-feedback', 'Enviando…');
+    try {
+      const res: any = await sendCredentialEmail({
+        mode: 'credential',
+        includeRecovery: !!getStoredRecoveryCode(),
+        recoveryCode: getStoredRecoveryCode() ?? '',
+      });
+      if (res?.ok) {
+        const when = res.credential_emailed_at ?? new Date().toISOString();
+        setCachedCredentialEmailedAt(when);
+        const kind = res.delivery === 'sent'
+          ? `Enviado a ${res.to_masked ?? ''}.`
+          : res.delivery === 'queued'
+            ? `Guardado en la cola (SMTP no configurado). Se enviará cuando esté listo.`
+            : `No pudimos enviar ahora. Intenta más tarde.`;
+        setFeedback('send-cred-feedback', kind, 'ok');
+        // Re-render el bloque con estado enviado
+        state.credential_emailed_at = when;
+        wireCredActions(state);
+      } else if (res?.kind === 'needs_email') {
+        setFeedback('send-cred-feedback', res.body ?? 'Agrega un correo primero.', 'error');
+      } else {
+        setFeedback('send-cred-feedback', res?.body ?? 'No pudimos enviar.', 'error');
+      }
+    } catch (e) {
+      setFeedback('send-cred-feedback',
+        isNotConfiguredError(e) ? NOT_CONFIGURED_MSG : 'Sin conexión con Tinta.',
+        'error');
+    }
   }
 
   function wireRecoveryCode(recovery: string) {
@@ -234,7 +387,7 @@ import NodeReward from '../../../components/tinta-map/NodeReward.astro';
     }
   }
 
-  function renderClaims(claims: any[]) {
+  function renderClaims(claims: any[], currentState: ProfileState | null = null) {
     if (!claims || claims.length === 0) {
       claimsSection.hidden = true;
       claimsList.innerHTML = '';
@@ -242,7 +395,12 @@ import NodeReward from '../../../components/tinta-map/NodeReward.astro';
     }
     claimsSection.hidden = false;
     claimsList.innerHTML = '';
+    const hasEmail = !!currentState?.has_recovery_email;
+    const maskedEmail = currentState?.masked_email ?? '';
     for (const c of claims) {
+      const backendEmailedAt = c.claim_emailed_at ?? null;
+      const cachedEmailedAt = getCachedClaimEmailedAt(c.claim_code);
+      const emailedAt = backendEmailedAt ?? cachedEmailedAt;
       const card = document.createElement('article');
       card.className = 'node-reward';
       card.dataset.variant = 'repeat';
@@ -256,6 +414,16 @@ import NodeReward from '../../../components/tinta-map/NodeReward.astro';
           <span class="label">Código de reclamo</span>
           <code class="claim-code">${escapeHtml(c.claim_code)}</code>
           <button type="button" class="btn-copy" data-copy="${escapeHtml(c.claim_code)}">Copiar código</button>
+        </div>
+        <div class="claim-mail-row">
+          ${emailedAt ? `
+            <p class="hint mailed">Enviado el <strong>${escapeHtml(fmtDateTime(emailedAt))}</strong>${maskedEmail ? ` a <em>${escapeHtml(maskedEmail)}</em>` : ''}. <button type="button" class="btn-tiny" data-send-claim="${escapeHtml(c.claim_code)}">Reenviar</button></p>
+          ` : hasEmail ? `
+            <button type="button" class="btn-line" data-send-claim="${escapeHtml(c.claim_code)}">Enviar código a mi correo</button>
+          ` : `
+            <p class="hint">Agrega un correo de recuperación abajo para enviarte este código.</p>
+          `}
+          <p class="feedback" data-target="send-claim-feedback-${escapeHtml(c.claim_code)}" aria-live="polite"></p>
         </div>
         <p class="note">Guarda este código. Podrás presentarlo cuando se anuncie el punto de entrega.</p>
       `;
@@ -271,6 +439,42 @@ import NodeReward from '../../../components/tinta-map/NodeReward.astro';
         } catch {}
       });
     });
+    claimsList.querySelectorAll<HTMLButtonElement>('[data-send-claim]').forEach((btn) => {
+      const claimCode = btn.dataset.sendClaim ?? '';
+      btn.addEventListener('click', () => sendClaimByEmail(claimCode, currentState));
+    });
+  }
+
+  async function sendClaimByEmail(claimCode: string, state: ProfileState | null) {
+    const target = `send-claim-feedback-${claimCode}`;
+    setFeedback(target, 'Enviando…');
+    try {
+      const res: any = await sendCredentialEmail({ mode: 'claim' });
+      if (res?.ok) {
+        const when = res.claim_emailed_at ?? new Date().toISOString();
+        setCachedClaimEmailedAt(claimCode, when);
+        const msg = res.delivery === 'sent'
+          ? `Enviado a ${res.to_masked ?? ''}.`
+          : res.delivery === 'queued'
+            ? 'Guardado en la cola (SMTP no configurado).'
+            : 'No pudimos enviar ahora.';
+        setFeedback(target, msg, 'ok');
+        // re-render la lista con estado enviado
+        const claims = getCachedClaims().map((c) =>
+          c.claim_code === claimCode ? { ...c, claim_emailed_at: when } : c,
+        );
+        // Guardar el emailed en el cache normalizado
+        renderClaims(claims, state);
+      } else if (res?.kind === 'needs_email') {
+        setFeedback(target, res.body ?? 'Agrega un correo primero.', 'error');
+      } else {
+        setFeedback(target, res?.body ?? 'No pudimos enviar.', 'error');
+      }
+    } catch (e) {
+      setFeedback(target,
+        isNotConfiguredError(e) ? NOT_CONFIGURED_MSG : 'Sin conexión con Tinta.',
+        'error');
+    }
   }
 
   function hydrateFromBackend(res: any) {
@@ -281,7 +485,9 @@ import NodeReward from '../../../components/tinta-map/NodeReward.astro';
       masked_email: res.masked_email ?? null,
       email_verified: !!res.email_verified,
       recovery_status: (res.recovery_status ?? 'none') as RecoveryStatus,
+      credential_emailed_at: res.credential_emailed_at ?? null,
     };
+    if (res.credential_emailed_at) setCachedCredentialEmailedAt(res.credential_emailed_at);
     if (state.profile) {
       setStoredPublicId(state.profile.public_id);
       if (state.profile.created_at) setStoredCreatedAt(state.profile.created_at);
@@ -304,7 +510,7 @@ import NodeReward from '../../../components/tinta-map/NodeReward.astro';
       })));
     }
     renderCredential(state);
-    renderClaims(res.claims ?? getCachedClaims());
+    renderClaims(res.claims ?? getCachedClaims(), state);
   }
 
   async function initial() {
@@ -313,15 +519,17 @@ import NodeReward from '../../../components/tinta-map/NodeReward.astro';
     const cachedPublic = getStoredPublicId();
     const cachedRecState = getCachedRecoveryState();
     if (cachedPublic) {
-      renderCredential({
+      const cachedState: ProfileState = {
         profile: { public_id: cachedPublic, created_at: getStoredCreatedAt() ?? undefined },
         progress: getCachedProgress(),
         has_recovery_email: !!cachedRecState?.has_recovery_email,
         masked_email: cachedRecState?.masked_email ?? null,
         email_verified: !!cachedRecState?.email_verified,
         recovery_status: cachedRecState?.recovery_status ?? 'none',
-      });
-      renderClaims(getCachedClaims());
+        credential_emailed_at: getCachedCredentialEmailedAt(),
+      };
+      renderCredential(cachedState);
+      renderClaims(getCachedClaims(), cachedState);
     }
 
     try {
@@ -366,21 +574,31 @@ import NodeReward from '../../../components/tinta-map/NodeReward.astro';
         });
         setFeedback(feedbackTarget, isReplace ? 'Correo reemplazado. Confirma en tu bandeja.' : 'Guardado. Te enviamos un correo (o quedó en cola).', 'ok');
         const p = getStoredPublicId();
-        if (p) renderEmailStatus({
-          profile: { public_id: p },
-          progress: getCachedProgress(),
-          has_recovery_email: !!res.has_recovery_email,
-          masked_email: res.masked_email ?? null,
-          email_verified: !!res.email_verified,
-          recovery_status: res.recovery_status,
-        });
+        if (p) {
+          const freshState: ProfileState = {
+            profile: { public_id: p, created_at: getStoredCreatedAt() ?? undefined },
+            progress: getCachedProgress(),
+            has_recovery_email: !!res.has_recovery_email,
+            masked_email: res.masked_email ?? null,
+            email_verified: !!res.email_verified,
+            recovery_status: res.recovery_status,
+            credential_emailed_at: getCachedCredentialEmailedAt(),
+          };
+          renderEmailStatus(freshState);
+          // El botón "Enviar mi credencial por correo" depende del correo:
+          // rehacer wire para que se active y también re-render de claims.
+          wireCredActions(freshState);
+          renderClaims(getCachedClaims(), freshState);
+        }
       } else if (res?.kind === 'needs_confirmation') {
         setFeedback(feedbackTarget, res.body ?? 'Se necesita confirmación explícita.', 'error');
       } else {
         setFeedback(feedbackTarget, res?.body ?? res?.error ?? 'No pudimos guardar.', 'error');
       }
-    } catch {
-      setFeedback(feedbackTarget, 'Sin conexión con Tinta.', 'error');
+    } catch (e) {
+      setFeedback(feedbackTarget,
+        isNotConfiguredError(e) ? NOT_CONFIGURED_MSG : 'Sin conexión con Tinta.',
+        'error');
     }
   }
 
@@ -586,6 +804,47 @@ import NodeReward from '../../../components/tinta-map/NodeReward.astro';
   .feedback.ok { color: #2d6a3f; }
 
   .hint { color: var(--ink-soft); font-size: 0.92rem; margin: 0.2rem 0 0; }
+
+  .cred-actions-section { max-width: 620px; margin-bottom: 1.2rem; }
+  .cred-actions-section h2 { margin: 0 0 0.4rem; font-size: 1.15rem; }
+  .cred-actions-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.9rem;
+    margin-top: 0.6rem;
+  }
+  .cred-action {
+    display: grid;
+    gap: 0.35rem;
+    align-content: start;
+  }
+  .btn-tiny {
+    display: inline-block;
+    background: transparent;
+    border: none;
+    color: var(--ink);
+    padding: 0;
+    margin-left: 0.35rem;
+    font-family: var(--font-accent);
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    text-decoration: underline;
+    cursor: pointer;
+  }
+  .btn-tiny:hover { color: var(--accent); }
+
+  .claim-mail-row {
+    margin: 0.7rem 0 0.5rem;
+    display: grid;
+    gap: 0.35rem;
+  }
+  .claim-mail-row .hint.mailed { color: var(--ink); }
+  .claim-mail-row .feedback:empty { display: none; }
+
+  @media (max-width: 640px) {
+    .cred-actions-row { grid-template-columns: 1fr; }
+  }
 
   .tm-actions-nav {
     display: flex;
