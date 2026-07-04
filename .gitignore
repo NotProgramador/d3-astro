@@ -11,3 +11,5 @@ dist
 supabase/.env.local
 
 .claude/
+
+supabase/.temp/
